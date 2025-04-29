@@ -3,16 +3,19 @@ const SC_TRANSMISSIONS = {
     selectedIndex: 0,
     listView: null,
     scrollContainer: null,
-    detailsSelectedIndex: 0,
     initialized: false,
 
     init: function (screenInstance) {
+
+        // PREVENT MULTIPLE INITIALIZATIONS
         if (this.initialized) {
             console.warn("SC_TRANSMISSIONS: Already initialized. Skipping re-initialization.");
+            this.updateSelection(0);
             return;
         }
         this.initialized = true;
 
+        // ATTACH LISTVIEW CONTAINER
         this.listView = screenInstance.LISTVIEW;
         if (!this.listView) {
             console.error("SC_TRANSMISSIONS: LISTVIEW instance not found.");
@@ -21,49 +24,7 @@ const SC_TRANSMISSIONS = {
 
         // Register navigation contexts
         if (window.ContextManager) {
-
-            // LIST VIEW
-            ContextManager.registerContext("transmissions-list", {
-                up: () => {
-                    if (this.selectedIndex > 0) this.updateSelection(this.selectedIndex - 1);
-                },
-                down: () => {
-                    if (this.selectedIndex < this.episodeSymbols.length - 1) this.updateSelection(this.selectedIndex + 1);
-                },
-                right: () => {
-                    const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-                    if (!selectedSymbol) return;
-                    selectedSymbol.gotoAndStop("details");
-                    this.scrollToTop(selectedSymbol);
-                    this.scrollContainer.setChildIndex(selectedSymbol, this.scrollContainer.numChildren - 1);
-                    ContextManager.setContext("transmissions-details");
-                    this.detailsSelectedIndex = 0;
-                    this.highlightDetailsField();
-                },
-                left: () => {
-                    ScreenManager.goBack();
-                },
-                yes: () => {
-                    const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-                    if (!selectedSymbol) return;
-                    PodCubePlayer.addToQueue(selectedSymbol.episode);
-                    console.log("SC_TRANSMISSIONS: Added to queue:", selectedSymbol.episode.title);
-                }
-            });
-
-            //DETAILS VIEW
-            ContextManager.registerContext("transmissions-details", {
-                up: () => this.navigateDetails(-1),
-                down: () => this.navigateDetails(1),
-                left: () => {
-                    const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-                    if (!selectedSymbol) return;
-                    selectedSymbol.gotoAndStop("list-selected");
-                    this.adjustScroll();
-                    this.clearDetailsHighlight();
-                    ContextManager.setContext("transmissions-list");
-                }
-            });
+            this.registerContexts()
         }
 
         // Create scroll container and mask
@@ -80,6 +41,48 @@ const SC_TRANSMISSIONS = {
         });
 
         PodCubeRSS.getFeed();
+    },
+
+    registerContexts: function () {// LIST VIEW
+        ContextManager.registerContext("transmissions-list", {
+            up: () => {
+                if (this.selectedIndex > 0) this.updateSelection(this.selectedIndex - 1);
+            },
+            down: () => {
+                if (this.selectedIndex < this.episodeSymbols.length - 1) this.updateSelection(this.selectedIndex + 1);
+            },
+            right: () => {
+                const selectedSymbol = this.episodeSymbols[this.selectedIndex];
+                if (!selectedSymbol) return;
+                selectedSymbol.gotoAndStop("details");
+                ContextManager.setContext("transmissions-details");
+                this.scrollToTop(selectedSymbol);
+                this.scrollContainer.setChildIndex(selectedSymbol, this.scrollContainer.numChildren - 1);
+            },
+            left: () => {
+                ScreenManager.goBack();
+            },
+            yes: () => {
+                const selectedSymbol = this.episodeSymbols[this.selectedIndex];
+                if (!selectedSymbol) return;
+                PodCubePlayer.addToQueue(selectedSymbol.episode);
+                console.log("SC_TRANSMISSIONS: Added to queue:", selectedSymbol.episode.title);
+            }
+        });
+
+        //DETAILS VIEW
+        ContextManager.registerContext("transmissions-details", {
+            up: () => null,
+            down: () => null,
+            left: () => {
+                const selectedSymbol = this.episodeSymbols[this.selectedIndex];
+                if (!selectedSymbol) return;
+                selectedSymbol.gotoAndStop("list-selected");
+                this.scrollSelectionToCenter();
+                ContextManager.setContext("transmissions-list");
+            }
+        });
+
     },
 
     populateEpisodes: function () {
@@ -149,12 +152,6 @@ const SC_TRANSMISSIONS = {
         console.log("SC_TRANSMISSIONS: Transmissions list initialized.");
     },
 
-    scrollToTop: function (selectedSymbol) {
-        const targetY = selectedSymbol.y;
-        createjs.Tween.get(this.scrollContainer)
-            .to({ y: -targetY }, 300, createjs.Ease.quadOut);
-    },
-
     updateSelection: function (newIndex) {
         if (this.episodeSymbols[this.selectedIndex]) {
             this.episodeSymbols[this.selectedIndex].gotoAndStop("list-unselected");
@@ -163,10 +160,16 @@ const SC_TRANSMISSIONS = {
         if (this.episodeSymbols[this.selectedIndex]) {
             this.episodeSymbols[this.selectedIndex].gotoAndStop("list-selected");
         }
-        this.adjustScroll();
+        this.scrollSelectionToCenter();
     },
 
-    adjustScroll: function () {
+    scrollToTop: function (selectedSymbol = this.episodeSymbols[0]) {
+        const targetY = selectedSymbol.y;
+        createjs.Tween.get(this.scrollContainer)
+            .to({ y: -targetY }, 300, createjs.Ease.quadOut);
+    },
+
+    scrollSelectionToCenter: function () {
         const selectedSymbol = this.episodeSymbols[this.selectedIndex];
         if (!selectedSymbol) return;
 
@@ -184,53 +187,6 @@ const SC_TRANSMISSIONS = {
             .to({ y: -targetY }, 300, createjs.Ease.quadOut);
     },
 
-    navigateDetails: function (direction) {
-        const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-        if (!selectedSymbol) return;
-
-        const detailsFields = [
-            selectedSymbol.model, selectedSymbol.integrity, selectedSymbol.locale,
-            selectedSymbol.region, selectedSymbol.zone, selectedSymbol.planet,
-            selectedSymbol.tags, selectedSymbol.longDate
-        ];
-
-        // Remove highlight from previous
-        if (detailsFields[this.detailsSelectedIndex]) {
-            detailsFields[this.detailsSelectedIndex].alpha = 0.5;
-        }
-
-        this.detailsSelectedIndex += direction;
-        this.detailsSelectedIndex = Math.max(0, Math.min(this.detailsSelectedIndex, detailsFields.length - 1));
-
-        // Highlight new
-        this.highlightDetailsField();
-    },
-
-    highlightDetailsField: function () {
-        const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-        if (!selectedSymbol) return;
-        const detailsFields = [
-            selectedSymbol.model, selectedSymbol.integrity, selectedSymbol.locale,
-            selectedSymbol.region, selectedSymbol.zone, selectedSymbol.planet,
-            selectedSymbol.tags, selectedSymbol.longDate
-        ];
-        detailsFields.forEach((field, idx) => {
-            if (field) field.alpha = (idx === this.detailsSelectedIndex) ? 1 : 0.5;
-        });
-    },
-
-    clearDetailsHighlight: function () {
-        const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-        if (!selectedSymbol) return;
-        const detailsFields = [
-            selectedSymbol.model, selectedSymbol.integrity, selectedSymbol.locale,
-            selectedSymbol.region, selectedSymbol.zone, selectedSymbol.planet,
-            selectedSymbol.tags, selectedSymbol.longDate
-        ];
-        detailsFields.forEach(field => {
-            if (field) field.alpha = 1;
-        });
-    },
 };
 
 MSG.subscribe("Loaded-Screen", (e) => {

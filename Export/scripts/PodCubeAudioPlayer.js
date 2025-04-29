@@ -35,12 +35,11 @@ class PodCubeAudioPlayer {
 
         if (this.currentIndex >= 0 && this.currentIndex < this.queue.length) {
             const episode = this.queue[this.currentIndex];
-            this.audio.crossOrigin = "anonymous";
             this.audio.src = episode.audio;
             this.audio.play();
 
             // Connect audio to analyzer node
-            this.connectAudioToAnalyzer();
+            //this.connectAudioToAnalyzer();
 
             MSG.publish("Episode-Playing", episode);
             console.log("PodCubeAudioPlayer: Playing:", episode.title);
