@@ -1,271 +1,90 @@
-// scripts/PodCubeRSS.js
+// PodCubeRSS.js - RSS Feed parser module
 
-// #region RSS_FEED_PARSER
+class PodCubeRSS {
+    constructor() {
+        this.FEED_URL = "https://pinecast.com/feed/pc";
+        this.lastUpdated = null;
+        this.feed = null;
+    }
 
-/*
-==============================================
-============== NOTES  ==========================
-================================================
+    stripHtml(html) {
+        return html.replace(/<[^>]*>/g, '');
+    }
 
-    - SHOULD PARSE MARKDOWN LINKS in descriptions
+    lookFor(desc, property) {
+        const regex = `:: ${property}: (.*)`;
+        const match = this.stripHtml(desc).match(new RegExp(regex));
+        return match ? match[1].trim() : "NULL";
+    }
 
-===============================================
-*/
-
-const PodCubeRSS = {
-    RSS_URL: "https://pinecast.com/feed/pc",
-    lastUpdated: null,
-    Transmissions: [], // Make Transmissions a property of the object
-
-    /**
-     * Adds a new Episode to the Transmissions list.
-     * @param {Element} item - The XML item element representing an episode.
-     */
-    addTransmission: function(item) {
-        const episode = new Episode(item); // Use the standalone Episode class
-        this.Transmissions.push(episode);
-    },
-
-    /**
-     * Fetches the RSS feed, parses it, and populates the Transmissions list.
-     */
-    getFeed: function() {
-        if (this.lastUpdated == null || (new Date() - this.lastUpdated) >= 900000) { // 15 minute cooldown
-            fetch(this.RSS_URL)
-                .then(response => response.text())
-                .then(str => new window.DOMParser().parseFromString(str, "text/xml"))
-                .then(data => {
-                    const items = data.querySelectorAll("item");
-                    items.forEach(el => this.addTransmission(el));
-                    console.log("PodCubeRSS: Transmissions fetched and parsed:", this.Transmissions);
-                })
-                .then(() => {
-                    MSG.pub("feedReady", 0); // Notify that the feed is ready
-                    this.lastUpdated = new Date(); // Update the last updated time
-                })
-                .catch(error => {
-                    console.error("Error fetching RSS feed:", error);
-                });
-        } else {
-            console.log("PodCubeRSS: Feed was updated recently. Skipping fetch.");
-            MSG.pub("feedReady", 0); // Publish feedReady even if skipping fetch
-        }
-    },
-
-    // --- SIMPLE SORTING METHODS ---
-
-    /**
-     * Sorts the Transmissions array by date in descending order (newest to oldest).
-     * Returns a NEW sorted array, does not modify the original Transmissions array.
-     * @returns {Episode[]} A new array of Episodes, sorted by date (newest to oldest).
-     */
-    sortByDate: function() {
-        return [...this.Transmissions].sort((a, b) => b.date - a.date);
-    },
-
-    /**
-     * Sorts the Transmissions array by publish date in descending order (newest to oldest).
-     * Returns a NEW sorted array, does not modify the original Transmissions array.
-     * @returns {Episode[]} A new array of Episodes, sorted by publish date (newest to oldest).
-     */
-    sortByPubDate: function() {
-        return [...this.Transmissions].sort((a, b) => b.pubdate - a.pubdate);
-    },
-
-    /**
-     * Sorts the Transmissions array by integrity score in descending order (highest integrity first).
-     * Returns a NEW sorted array, does not modify the original Transmissions array.
-     * @returns {Episode[]} A new array of Episodes, sorted by integrity score (highest first).
-     */
-    sortByIntegrity: function() {
-        return [...this.Transmissions].sort((a, b) => b.integrity - a.integrity);
-    },
-
-    // --- ADVANCED GROUPING AND SORTING METHODS ---
-
-    /**
-     * Groups episodes by their 'model' property.
-     * Returns an object where keys are model names and values are arrays of Episodes for that model.
-     * @returns {Object.<string, Episode[]>} An object grouping Episodes by model.
-     */
-    groupByModel: function() {
-        return this.Transmissions.reduce((groups, episode) => {
-            const model = episode.model;
-            groups[model] = groups[model] || []; // Initialize group array if not exists
-            groups[model].push(episode);
-            return groups;
-        }, {}); // Initial value for reduce is an empty object ({} for groups)
-    },
-
-    /**
-     * Groups episodes by their 'origin' property.
-     * Returns an object where keys are origin names and values are arrays of Episodes for that origin.
-     * @returns {Object.<string, Episode[]>} An object grouping Episodes by origin.
-     */
-    groupByOrigin: function() {
-        return this.Transmissions.reduce((groups, episode) => {
-            const origin = episode.origin;
-            groups[origin] = groups[origin] || [];
-            groups[origin].push(episode);
-            return groups;
-        }, {});
-    },
-
-    /**
-     * Groups episodes by their 'region' property.
-     * Returns an object where keys are region names and values are arrays of Episodes for that region.
-     * @returns {Object.<string, Episode[]>} An object grouping Episodes by region.
-     */
-    groupByRegion: function() {
-        return this.Transmissions.reduce((groups, episode) => {
-            const region = episode.region;
-            groups[region] = groups[region] || [];
-            groups[region].push(episode);
-            return groups;
-        }, {});
-    },
-
-    /**
-     * Groups episodes by tags, with basic fuzzy matching (plural handling).
-     * Returns an object where keys are processed tags (singular form),
-     * and values are arrays of Episodes containing that tag, sorted by tag frequency (most frequent first).
-     * @returns {Object.<string, Episode[]>} An object grouping Episodes by fuzzy tags, sorted by tag frequency.
-     */
-    groupByTagsFuzzy: function() {
-        const tagCounts = {}; // To count tag occurrences
-        const tagGroups = {}; // To group episodes by tag
-
-        // 1. Count tag occurrences and populate tagGroups
-        this.Transmissions.forEach(episode => {
-            episode.tags.forEach(tag => {
-                const processedTag = this.processTagFuzzy(tag); // Apply basic fuzzy processing
-                if (!tagGroups[processedTag]) {
-                    tagGroups[processedTag] = [];
-                    tagCounts[processedTag] = 0;
-                }
-                tagGroups[processedTag].push(episode);
-                tagCounts[processedTag]++;
-            });
-        });
-
-        // 2. Sort tags by frequency (most frequent first) and return in desired structure
-        const sortedTagGroups = Object.keys(tagGroups).sort((tagA, tagB) => {
-            return tagCounts[tagB] - tagCounts[tagA]; // Sort by tag count in descending order
-        }).reduce((sortedGroupsObj, tag) => { // Rebuild object in sorted tag order
-            sortedGroupsObj[tag] = tagGroups[tag];
-            return sortedGroupsObj;
-        }, {});
-
-        return sortedTagGroups;
-    },
-
-    /**
-     * Basic fuzzy tag processing: converts tag to lowercase and removes trailing 's' for plurals.
-     * You can expand this for more sophisticated fuzzy matching if needed.
-     * @param {string} tag The original tag string.
-     * @returns {string} The processed (fuzzy) tag string.
-     * @private // Indicate this is a helper method not intended for direct external use.
-     */
-    processTagFuzzy: function(tag) {
-        let processedTag = tag.toLowerCase().trim(); // Lowercase and trim whitespace
-        if (processedTag.endsWith('s') && processedTag.length > 1) { // Simple plural handling: remove trailing 's'
-            processedTag = processedTag.slice(0, -1);
-        }
-        return processedTag;
-    },
-
-};
-
-class Episode {
-    // NEW: Static property to list all properties
-    static propertyList = [
-        "guid", "pubdate", "audio", "title", "model", "integrity",
-        "origin", "locale", "region", "zone", "planet", "date",
-        "tags", "duration", "location"
-    ];
-
-    constructor(item) {
-        // ITEM DESCRIPTION FIELD
+    normalizeEpisode(item) {
         const description = item.querySelector("description").innerHTML;
-
-        // MODIFIED PROPERTIES
-        const titleRaw = item.querySelector("title").innerHTML || "Data Error";
-        const model = this.lookFor(description, "PODCUBE MODEL") || "Data Error";
-        const integrity = this.lookFor(description, "INTEGRITY") || "Data Error";
-        const origin = this.lookFor(description, "ORIGIN") || "Data Error";
-        const locale = this.lookFor(description, "LOCALE") || "Data Error";
-        const region = this.lookFor(description, "REGION") || "Data Error";
-        const zone = this.lookFor(description, "ZONE") || "Data Error";
-        const planet = this.lookFor(description, "PLANET") || "Data Error";
-        let dateRaw = this.lookFor(description, "DATE") || "Data Error";
-        const tagsRaw = this.lookFor(description, "TAGS") || "Data Error";
-
-        // NEW: Extract duration
-        const durationRaw = item.querySelector("itunes\\:duration")?.innerHTML || "Data Error";
-
-        // Process date
-        const dateParts = dateRaw.split("/");
-        const date = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
-
-        // Process title
+        const titleRaw = item.querySelector("title").innerHTML;
         const titleSplit = titleRaw.split(/_(.+)/)[1];
         const title = titleSplit
             ? titleSplit.replace(/_/g, " ")
             : titleRaw.replace(/_/g, " ");
+        
+        // Parse date from description metadata
+        const dateRaw = this.lookFor(description, "DATE");
+        const dateParts = dateRaw.split("/");
+        const date = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
 
-        // Process tags
-        const tags = tagsRaw.split(", ");
-
-        // Process integrity
-        const integrityScore = parseFloat(integrity);
-
-        // UNMODIFIED PROPERTIES
-        this.guid = item.querySelector("guid").innerHTML || null;
-        this.pubdate = new Date(item.querySelector("pubDate").innerHTML) || "Data Error";
-        this.audio = item.querySelector("enclosure").getAttribute("url") || "Data Error";
-
-        // MODIFIED PROPERTIES
-        this.title = this.htmlDecode(title);
-        this.model = this.htmlDecode(model);
-        this.integrity = integrityScore;
-        this.origin = this.htmlDecode(origin);
-        this.locale = this.htmlDecode(locale);
-        this.region = this.htmlDecode(region);
-        this.zone = this.htmlDecode(zone);
-        this.planet = this.htmlDecode(planet);
-        this.date = date;
-        this.tags = tags;
-
-        // NEW: Add duration property
-        this.episodeDuration = durationRaw.toString() || "Data Error";
-
-        // Concatenate origin, locale, region, zone, and planet for location
-        this.location = [
-            this.origin, this.locale, this.region,
-            this.zone, this.planet
-        ].filter(Boolean).join(", ");
+        return new Episode({
+            id: item.querySelector("guid").innerHTML,
+            title: title,
+            shortcode: titleRaw.split("_")[0]?.trim(),
+            rawTitle: titleRaw,
+            date: date,
+            published: new Date(item.querySelector("pubDate").innerHTML),
+            model: this.lookFor(description, "PODCUBE MODEL"),
+            integrity: parseFloat(this.lookFor(description, "INTEGRITY")),
+            origin: this.lookFor(description, "ORIGIN"),
+            locale: this.lookFor(description, "LOCALE"), 
+            region: this.lookFor(description, "REGION"),
+            zone: this.lookFor(description, "ZONE"),
+            planet: this.lookFor(description, "PLANET"),
+            tags: this.lookFor(description, "TAGS").split(",").map(t => t.trim()),
+            audioUrl: item.querySelector("enclosure").getAttribute("url"),
+            duration: parseInt(item.querySelector("itunes\\:duration")?.innerHTML),
+            size: parseInt(item.querySelector("enclosure")?.getAttribute("length")),
+            description: description
+        });
     }
 
-    /**
-     * Extracts a property value from the description using a specific pattern.
-     * @param {string} desc - The description string to search.
-     * @param {string} property - The property name to look for.
-     * @returns {string|null} - The extracted property value or "NULL" if not found.
-     */
-    lookFor(desc, property) {
-        const regex = `:: ${property}: (.*)<\/p>`;
-        const match = desc.match(new RegExp(regex));
-        return match ? match[1] : "NULL";
-    }
+    async fetchFeed() {
+        // Return cached feed if it exists and is recent
+        if (this.feed && this.lastUpdated && (new Date() - this.lastUpdated) < 900000) {
+            console.log("PodCubeRSS: Using cached feed");
+            return this.feed;
+        }
 
-    /**
-     * Decodes HTML entities in a string.
-     * @param {string} input - The string to decode.
-     * @returns {string} - The decoded string.
-     */
-    htmlDecode(input) {
-        const doc = new DOMParser().parseFromString(input, "text/html");
-        return doc.documentElement.textContent;
+        try {
+            const res = await fetch(this.FEED_URL);
+            if (!res.ok) throw new Error("Failed to fetch PodCube RSS feed");
+
+            const text = await res.text();
+            const doc = new window.DOMParser().parseFromString(text, "text/xml");
+            const items = doc.querySelectorAll("item");
+            
+            const episodes = Array.from(items).map(item => this.normalizeEpisode(item));
+            
+            const metadata = {
+                title: doc.querySelector("channel > title")?.textContent || "PodCube Feed",
+                description: doc.querySelector("channel > description")?.textContent || "",
+                icon: doc.querySelector("channel > image > url")?.textContent || "",
+                author: doc.querySelector("channel > itunes\\:author")?.textContent || null,
+                total: episodes.length
+            };
+
+            this.feed = new Feed(metadata, episodes);
+            this.lastUpdated = new Date();
+            return this.feed;
+
+        } catch (error) {
+            console.error("Error fetching RSS feed:", error);
+            throw error;
+        }
     }
 }
 

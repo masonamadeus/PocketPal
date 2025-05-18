@@ -1,38 +1,49 @@
 // RESPONSIBLE FOR DISPENSING INTERACTION LOGIC THAT WAS TOO COMPLICATED FOR ME TO CODE UP IN THE SHITTY INTERNAL EDITOR, PLUS I DON'T TRUST IT LOL.
 
-const BehaviorDispenser = {
+class BehaviorManager {
+    constructor() {
+        this.registeredSymbols = [];
 
-    init: function (newThing, behaviorType) {
-        // Validate the newThing object
-        if (!newThing) {
-            console.error("BehaviorDispenser: Invalid newThing object.");
+    }
+
+
+    EpisodeSymbol(episodeSymbol, episode) {
+
+        if (episodeSymbol.initialized) {
+            PodCube.log("EpisodeSymbol: Already initialized");
+            return;
+        }
+        episodeSymbol.initialized = true;
+        if (!episodeSymbol || !episode) {
+            PodCube.log("EpisodeSymbol: Missing required parameters");
             return;
         }
 
-        // Check if newThing is already initialized
-        if (newThing.initialized) {
-            console.error("BehaviorDispenser: Already initialized", newThing);
-            return;
-        }
+        // Store episode reference
+        episodeSymbol.episode = episode;
 
-        // Mark as initialized
-        newThing.initialized = true;
 
-        // Assign the behavior type to the thing
-        newThing.behaviorType = behaviorType;
+        Episode.propertyList.forEach(prop => {
+            try {
+                // Check if the property exists and is a text field
+                if (episodeSymbol[prop]?.text !== undefined && episode[prop] !== undefined) {
+                    let value;
+                    if (Array.isArray(episode[prop])) {
+                        value = episode[prop].join(", ");
+                    } else {
+                        value = episode[prop].toString();
+                    }
 
-        // Find and invoke the corresponding behavior method
-        const methods = Object.getOwnPropertyNames(this).filter(prop => typeof this[prop] === 'function');
-        if (methods.includes(behaviorType)) {
-            console.log("BehaviorDispenser: Registering", newThing, "as", behaviorType);
-            this[behaviorType](newThing);
-        } else {
-            console.error("BehaviorDispenser: No matching method found for behavior type:", behaviorType);
-            console.error("BehaviorDispenser: Available methods:", methods);
-        }
-    },
+                    episodeSymbol[prop].text = value
 
-    Button: function (thing) {
+                }
+            } catch (err) {
+                PodCube.log(`EpisodeSymbol: Error setting ${prop}:`, err);
+            }
+        });
+    }
+    Button(thing) {
+        thing.initialized = true;
         thing.isDebouncing = false;
         thing.debounceDelay = 80;
         thing.isPressed = false;
@@ -42,7 +53,7 @@ const BehaviorDispenser = {
         // THE PRIMARY ACTION IS THE THING THAT HAPPENS WHEN YOU PRESS THE BUTTON
         thing.primaryAction = function () {
             thing.play();
-            MSG.publish("Pressed-" + thing.name, thing);
+            PodCube.MSG.publish("Pressed-" + thing.name, thing);
         };
 
         // Use the helper function to set up the hit area
@@ -87,18 +98,18 @@ const BehaviorDispenser = {
         if (thing.keybind) {
             const keybind = Array.isArray(thing.keybind) ? thing.keybind : [thing.keybind];
             keybind.forEach(function (key) {
-                MSG.subscribe("Keyboard-" + key, thing.primaryAction,false);
+                PodCube.MSG.subscribe("Keyboard-" + key, thing.primaryAction, false);
             });
         } else if (thing.attributes?.keybind) {
             thing.attributes.keybind.forEach(function (key) {
-                MSG.subscribe("Keyboard-" + key, thing.primaryAction,false);
+                PodCube.MSG.subscribe("Keyboard-" + key, thing.primaryAction, false);
             });
         }
-    },
+    }
 
-    setHitArea: function (thing) {
+    setHitArea(thing) {
         if (!thing.nominalBounds) {
-            console.error("BehaviorDispenser: 'nominalBounds' is missing on the thing object.");
+            console.error("BehaviorManager: 'nominalBounds' is missing on the thing object.");
             return;
         }
 
@@ -106,6 +117,5 @@ const BehaviorDispenser = {
         const hitArea = new createjs.Shape();
         hitArea.graphics.beginFill("#00000").drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
         thing.hitArea = hitArea;
-    },
-
-};
+    }
+}

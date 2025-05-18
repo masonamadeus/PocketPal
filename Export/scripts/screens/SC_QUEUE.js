@@ -1,17 +1,28 @@
-const SC_QUEUE = {
-    queueListView: null,
-    initialized: false,
+class SC_Queue extends PodCubeScreen {
+    constructor(screenInstance) {
+        this.queueListView = null;
+        this.initialized = false;
 
-    init: function(screenInstance) {
+        this.init(screenInstance);
+        PodCube.SC_Queue = this;
+    }
+
+    init(screenInstance) {
         if (this.initialized) return;
         this.initialized = true;
         this.queueListView = screenInstance.QUEUE_LISTVIEW;
 
         MSG.subscribe("Queue-Updated", this.updateQueueList.bind(this));
         this.updateQueueList(PodCubePlayer.queue);
-    },
 
-    updateQueueList: function(queue) {
+        MSG.subscribe("Loaded-Screen", (e) => {
+            if (e.name === "SC_QUEUE") {
+                new QueueScreen(e.instance);
+            }
+        }, false);
+    }
+
+    updateQueueList(queue) {
         this.queueListView.removeAllChildren();
 
         queue.forEach((episode, index) => {
@@ -31,8 +42,3 @@ const SC_QUEUE = {
     }
 };
 
-MSG.subscribe("Loaded-Screen", (e) => {
-    if (e.name === "SC_QUEUE") {
-        SC_QUEUE.init(e.instance);
-    }
-}, false);

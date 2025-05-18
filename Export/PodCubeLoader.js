@@ -1,17 +1,24 @@
-const PodCubeLoader = {
-
-    immediateScripts: [
-        'scripts/PodCubeMSG.js',
-        'scripts/PodCubeBehaviorDispenser.js'
+const PodCubeLoader = {    // Load module classes first    
+    moduleScripts: [
+        'scripts/PodCubeMSG.js',          // Base messaging system
+        'scripts/PodCube_Episode.js',      // Load Episode class first
+        'scripts/PodCube_Feed.js',         // Load Feed class before parsers
+        'scripts/PodCubeJSON.js',          // JSON feed parser
+        'scripts/PodCubeRSS.js',           // RSS feed parser
+        'scripts/PodCubeAudioPlayer.js',   // Audio player
+        'scripts/PodCubeBehaviorDispenser.js', // UI behaviors
+        'scripts/PodCubeContextManager.js', // Navigation contexts
+        'scripts/PodCubeScreenManager.js',  // Screen management
+        'scripts/PodCube_MemoryCartridge.js', // Persistent storage
     ],
 
-    deferredScripts: [
-        'scripts/PodCubeContextManager.js',
-        'scripts/PodCubeRSS.js',
-        'scripts/PodCubeScreenManager.js',
-        'scripts/PodCubeAudioPlayer.js',
-        'scripts/SC_TRANSMISSIONS.js',
-        'scripts/SC_QUEUE.js',
+    // Manager and screens load after modules
+    screenScripts: [
+        'scripts/PodCube_Manager.js',      // Core manager (creates global instance)
+        'scripts/PodCube_Screen.js',       // Base screen class
+        'scripts/screens/SC_TRANSMISSIONS.js',
+        'scripts/screens/SC_QUEUE.js',
+        'scripts/screens/SC_MAIN.js',
     ],
 
     fontFaces: [
@@ -19,28 +26,51 @@ const PodCubeLoader = {
         'Rubik 80s Fade',
         'Share Tech Mono',
         'Share Tech',
-        'Convection'
+        'Convection',
+        'Libre Barcode 39',
+        'Linear Beam',
+        'Sixtyfour:BLED,SCAN@13,-7',
     ],
 
-    loadScript: function(scriptPath, onSuccess, onError) { // Added onSuccess and onError callbacks
-        const scriptElement = document.createElement('script');
-        scriptElement.src = scriptPath;
+    loadScript: function(scriptPath) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = scriptPath;
+            script.onload = () => {
+                console.log(`Loaded: ${scriptPath}`);
+                resolve();
+            };
+            script.onerror = () => reject(`Failed to load: ${scriptPath}`);
+            document.head.appendChild(script);
+        });
+    },
 
-        scriptElement.onload = () => {
-            console.log(`Script loaded: ${scriptPath}`);
-            if (onSuccess) {
-                onSuccess(); // Execute the success callback if provided
-            }
-        };
+    loadScriptsInOrder: async function(scripts) {
+        for (const script of scripts) {
+            await this.loadScript(script);
+        }
+    },
 
-        scriptElement.onerror = () => {
-            console.error(`Error loading script: ${scriptPath}`);
-            if (onError) {
-                onError(); // Execute the error callback if provided
-            }
-        };
-
-        document.head.appendChild(scriptElement);
+    init: async function() {
+        try {
+            // Load module classes first
+            console.log("Loading modules...");
+            await this.loadScriptsInOrder(this.moduleScripts);
+            
+            // Load manager and screens
+            console.log("Loading manager and screens...");
+            await this.loadScriptsInOrder(this.screenScripts);
+            
+            // Initialize PodCube (but it will wait for Animate)
+            console.log("Creating PodCube instance...");
+            new PodCube_Manager();
+            
+            // Signal core scripts are ready
+            console.log("Core initialization complete");
+            
+        } catch (error) {
+            console.error("Script loading failed:", error);
+        }
     },
 
     loadFonts: function() {
@@ -64,60 +94,10 @@ const PodCubeLoader = {
         document.head.appendChild(linkElement);
         console.log(`Font linked: ${fontUrl}`);
     },
-
-    loadImmediate: function() {
-        let scriptsLoadedCount = 0;
-        const totalScripts = this.immediateScripts.length;
-
-        this.immediateScripts.forEach(scriptPath => {
-            this.loadScript(
-                scriptPath,
-                () => { // onSuccess callback for loadScript
-                    scriptsLoadedCount++;
-                    if (scriptsLoadedCount === totalScripts) {
-                        console.log("Immediate Scripts Loaded");
-                        this.loadFonts(); // Load fonts immediately after immediate scripts
-                        MSG.subscribe("Ready-Animate", this.loadDeferred.bind(this));
-                    }
-                },
-                () => { // onError callback for loadScript
-                    scriptsLoadedCount++;
-                    if (scriptsLoadedCount === totalScripts) {
-                        console.log("Script loading finished (with errors)");
-                        this.loadFonts(); // Load fonts even if there are errors
-                        MSG.subscribe("Ready-Animate", this.loadDeferred.bind(this));
-                    }
-                }
-            );
-        });
-    },
-
-    loadDeferred: function () {
-        let scriptsLoadedCount = 0;
-        const totalScripts = this.deferredScripts.length;
-
-        // PUSH LIB TO GLOBAL FOR EASIER INSTANTIATION
-        window.lib = AdobeAn.getComposition(AdobeAn.bootcompsLoaded[0]).getLibrary();
-
-        this.deferredScripts.forEach(scriptPath => {
-            this.loadScript(
-                scriptPath,
-                () => { // onSuccess callback for loadScript
-                    scriptsLoadedCount++;
-                    if (scriptsLoadedCount === totalScripts) {
-                        MSG.publish("Ready-Scripts", "");
-                    }
-                },
-                () => { // onError callback for loadScript
-                    scriptsLoadedCount++;
-                    if (scriptsLoadedCount === totalScripts) {
-                        console.log("Script loading finished (with errors)");
-                    }
-                }
-            );
-        });
-    },
-
 };
 
-PodCubeLoader.loadImmediate();
+// Start loading everything
+document.addEventListener('DOMContentLoaded', () => {
+    PodCubeLoader.loadFonts();
+    PodCubeLoader.init();
+});
