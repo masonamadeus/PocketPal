@@ -67,7 +67,7 @@ class SC_TRANSMISSIONS extends PodCubeScreen {
             yes: [() => {const selectedSymbol = 
                 this.episodeSymbols[this.selectedIndex];
                 if (!selectedSymbol) return;
-                PodCubePlayer.addToQueue(selectedSymbol.episode);
+                PodCube.Player.addToQueue(selectedSymbol.episode);
             }, "Queue"],
             no: [() => this.popOutDataDisk(this.episodeSymbols[this.selectedIndex].episode), "Pop Out"]
         });

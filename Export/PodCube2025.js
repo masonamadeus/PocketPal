@@ -3,8 +3,8 @@
 var p; // shortcut to reference prototypes
 var lib={};var ss={};var img={};
 lib.ssMetadata = [
-		{name:"PodCube2025_atlas_1", frames: [[1123,219,130,64],[570,1107,303,64],[570,1173,1136,2],[0,954,1515,74],[1406,219,568,176],[1406,397,568,176],[1406,575,568,176],[0,1030,568,176],[0,817,1515,135],[1123,0,780,217],[924,335,480,480],[1554,1010,451,96],[0,657,916,96],[1517,753,252,255],[570,1030,982,75],[1406,753,68,57],[0,335,922,320],[0,0,1121,333]]},
-		{name:"PodCube2025_atlas_2", frames: [[904,0,890,1739],[0,0,902,1739]]}
+		{name:"PodCube2025_atlas_1", frames: [[1810,1536,130,64],[1674,1270,303,64],[0,1954,1136,2],[0,1878,1515,74],[1374,657,568,176],[1374,835,568,176],[892,1358,568,176],[1462,1358,568,176],[0,1741,1515,135],[892,1139,780,217],[892,657,480,480],[1517,1711,450,97],[0,0,890,1739],[892,1536,916,96],[1674,1013,252,255],[892,1634,982,75],[1876,1602,68,57],[892,335,922,320],[892,0,1121,333]]},
+		{name:"PodCube2025_atlas_2", frames: [[0,0,1207,1739]]}
 ];
 
 
@@ -28,86 +28,100 @@ lib.ssMetadata = [
 
 
 
-(lib.CachedBmp_3 = function() {
+(lib.CachedBmp_21 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(0);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_2 = function() {
+(lib.CachedBmp_20 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(1);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_1 = function() {
+(lib.CachedBmp_19 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(2);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_20 = function() {
+(lib.CachedBmp_18 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(3);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_18 = function() {
+(lib.CachedBmp_17 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(4);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_17 = function() {
+(lib.CachedBmp_16 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(5);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_16 = function() {
+(lib.CachedBmp_15 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(6);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_15 = function() {
+(lib.CachedBmp_14 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(7);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_19 = function() {
+(lib.CachedBmp_13 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(8);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_23 = function() {
+(lib.CachedBmp_12 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(9);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_22 = function() {
+(lib.CachedBmp_11 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(10);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_8 = function() {
+(lib.CachedBmp_10 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(11);
+}).prototype = p = new cjs.Sprite();
+
+
+
+(lib.CachedBmp_9 = function() {
+	this.initialize(ss["PodCube2025_atlas_1"]);
+	this.gotoAndStop(12);
+}).prototype = p = new cjs.Sprite();
+
+
+
+(lib.CachedBmp_8 = function() {
+	this.initialize(ss["PodCube2025_atlas_1"]);
+	this.gotoAndStop(13);
 }).prototype = p = new cjs.Sprite();
 
 
@@ -120,56 +134,42 @@ lib.ssMetadata = [
 
 
 (lib.CachedBmp_6 = function() {
-	this.initialize(ss["PodCube2025_atlas_1"]);
-	this.gotoAndStop(12);
-}).prototype = p = new cjs.Sprite();
-
-
-
-(lib.CachedBmp_5 = function() {
-	this.initialize(ss["PodCube2025_atlas_2"]);
-	this.gotoAndStop(1);
-}).prototype = p = new cjs.Sprite();
-
-
-
-(lib.CachedBmp_4 = function() {
-	this.initialize(img.CachedBmp_4);
+	this.initialize(img.CachedBmp_6);
 }).prototype = p = new cjs.Bitmap();
 p.nominalBounds = new cjs.Rectangle(0,0,2715,1753);
 
 
-(lib.CachedBmp_24 = function() {
-	this.initialize(ss["PodCube2025_atlas_1"]);
-	this.gotoAndStop(13);
-}).prototype = p = new cjs.Sprite();
-
-
-
-(lib.CachedBmp_14 = function() {
+(lib.CachedBmp_5 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(14);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_13 = function() {
+(lib.CachedBmp_4 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(15);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_12 = function() {
+(lib.CachedBmp_3 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(16);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.CachedBmp_11 = function() {
+(lib.CachedBmp_2 = function() {
 	this.initialize(ss["PodCube2025_atlas_1"]);
 	this.gotoAndStop(17);
+}).prototype = p = new cjs.Sprite();
+
+
+
+(lib.CachedBmp_1 = function() {
+	this.initialize(ss["PodCube2025_atlas_1"]);
+	this.gotoAndStop(18);
 }).prototype = p = new cjs.Sprite();
 // helper functions:
 
@@ -249,10 +249,10 @@ if (reversed == null) { reversed = false; }
 	cjs.MovieClip.apply(this,[props]);
 
 	// Layer_1
-	this.instance = new lib.CachedBmp_23();
+	this.instance = new lib.CachedBmp_12();
 	this.instance.setTransform(-29.55,-110.5,0.5,0.5);
 
-	this.instance_1 = new lib.CachedBmp_22();
+	this.instance_1 = new lib.CachedBmp_11();
 	this.instance_1.setTransform(-314.25,-120.1,0.5,0.5);
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance_1},{t:this.instance}]}).wait(1));
@@ -535,7 +535,7 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get(this).call(this.frame_0).wait(1));
 
 	// Layer_1_copy
-	this.instance = new lib.CachedBmp_24();
+	this.instance = new lib.CachedBmp_5();
 	this.instance.setTransform(0,0,0.4618,0.4618);
 
 	this.timeline.addTween(cjs.Tween.get(this.instance).wait(1));
@@ -589,8 +589,8 @@ if (reversed == null) { reversed = false; }
 
 	// Layer_1
 	this.shape = new cjs.Shape();
-	this.shape.graphics.f("#282828").s().p("AicLXQijgGgwjCIiuwdQAAjIDTAAIKVAAQDTAAAADIIiuQdQgvDCikAGg");
-	this.shape.setTransform(-2.35,0,1,0.9942,0,0,0,0,72.7);
+	this.shape.graphics.f("#282828").s().p("AicLTQijgGgwjBIiuwXQAAjHDTAAIKVAAQDTAAAADHIiuQXQgvDBikAGg");
+	this.shape.setTransform(-2.375,-72.25);
 
 	this.timeline.addTween(cjs.Tween.get(this.shape).wait(1));
 
@@ -1115,16 +1115,16 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get(this.shape).wait(1));
 
 	// sticker
-	this.instance = new lib.CachedBmp_14();
+	this.instance = new lib.CachedBmp_4();
 	this.instance.setTransform(-165.45,-53.1,0.3546,0.3546);
 
-	this.instance_1 = new lib.CachedBmp_13();
+	this.instance_1 = new lib.CachedBmp_3();
 	this.instance_1.setTransform(156.3,-124.25,0.3546,0.3546);
 
-	this.instance_2 = new lib.CachedBmp_12();
+	this.instance_2 = new lib.CachedBmp_2();
 	this.instance_2.setTransform(-166.45,-151.45,0.3546,0.3546);
 
-	this.instance_3 = new lib.CachedBmp_11();
+	this.instance_3 = new lib.CachedBmp_1();
 	this.instance_3.setTransform(-191.3,-140.65,0.3546,0.3546);
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance_3},{t:this.instance_2},{t:this.instance_1},{t:this.instance}]}).wait(1));
@@ -1532,7 +1532,7 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get(this.instance_4).wait(4).to({scaleX:0.9881,scaleY:0.9881,x:464.65,y:448.5},4).wait(2).to({x:468.85},0).to({x:1327.05},18).wait(1));
 
 	// DAMAGE
-	this.instance_5 = new lib.CachedBmp_4();
+	this.instance_5 = new lib.CachedBmp_6();
 	this.instance_5.setTransform(14.6,22.15,0.5,0.5);
 
 	var maskedShapeInstanceList = [this.instance_5];
@@ -2364,13 +2364,13 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.shape}]}).to({state:[{t:this.shape_2},{t:this.shape_1}]},1).to({state:[{t:this.shape_4},{t:this.shape_3}]},1).wait(1));
 
 	// details_labels
-	this.instance = new lib.CachedBmp_3();
+	this.instance = new lib.CachedBmp_21();
 	this.instance.setTransform(12.25,492.9,0.5,0.5);
 
-	this.instance_1 = new lib.CachedBmp_2();
+	this.instance_1 = new lib.CachedBmp_20();
 	this.instance_1.setTransform(663.4,549.55,0.5,0.5);
 
-	this.instance_2 = new lib.CachedBmp_1();
+	this.instance_2 = new lib.CachedBmp_19();
 	this.instance_2.setTransform(130.25,137.3,0.5,0.5);
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[]}).to({state:[{t:this.instance_2},{t:this.instance_1},{t:this.instance}]},2).wait(1));
@@ -2522,22 +2522,22 @@ if (reversed == null) { reversed = false; }
 	this.instance_1 = new lib.PodCube("synched",0);
 	this.instance_1.setTransform(-369.8,-396.35,0.0981,0.0981,0,0,0,90.8,197.8);
 
-	this.instance_2 = new lib.CachedBmp_20();
+	this.instance_2 = new lib.CachedBmp_18();
 	this.instance_2.setTransform(-346.5,-363,0.5,0.5);
 
-	this.instance_3 = new lib.CachedBmp_18();
+	this.instance_3 = new lib.CachedBmp_17();
 	this.instance_3.setTransform(-378.7,284,0.5,0.5);
 
-	this.instance_4 = new lib.CachedBmp_17();
+	this.instance_4 = new lib.CachedBmp_16();
 	this.instance_4.setTransform(-378.7,205.1,0.5,0.5);
 
-	this.instance_5 = new lib.CachedBmp_16();
+	this.instance_5 = new lib.CachedBmp_15();
 	this.instance_5.setTransform(-378.7,126.3,0.5,0.5);
 
-	this.instance_6 = new lib.CachedBmp_15();
+	this.instance_6 = new lib.CachedBmp_14();
 	this.instance_6.setTransform(-378.7,47.5,0.5,0.5);
 
-	this.instance_7 = new lib.CachedBmp_19();
+	this.instance_7 = new lib.CachedBmp_13();
 	this.instance_7.setTransform(-364.05,-423.75,0.5,0.5);
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance_7},{t:this.instance_6},{t:this.instance_5},{t:this.instance_4},{t:this.instance_3},{t:this.instance_2},{t:this.instance_1},{t:this.instance}]}).wait(1));
@@ -2572,20 +2572,20 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get(this.shape).wait(1));
 
 	// Layer_2
-	this.noHint = new cjs.Text("Context Hint", "19px 'Do Hyeon'", "#1768DA");
+	this.noHint = new cjs.Text("Context Hint", "22px 'Nova Square'", "#1768DA");
 	this.noHint.name = "noHint";
 	this.noHint.textAlign = "right";
-	this.noHint.lineHeight = 21;
-	this.noHint.lineWidth = 303;
+	this.noHint.lineHeight = 29;
+	this.noHint.lineWidth = 309;
 	this.noHint.parent = this;
-	this.noHint.setTransform(368.45,449.2);
+	this.noHint.setTransform(365.75,446.9,1,1,0,20.0002,0);
 
-	this.yesHint = new cjs.Text("Context Hint", "19px 'Do Hyeon'", "#1768DA");
+	this.yesHint = new cjs.Text("Context Hint", "22px 'Nova Square'", "#1768DA");
 	this.yesHint.name = "yesHint";
-	this.yesHint.lineHeight = 21;
-	this.yesHint.lineWidth = 354;
+	this.yesHint.lineHeight = 29;
+	this.yesHint.lineWidth = 312;
 	this.yesHint.parent = this;
-	this.yesHint.setTransform(72.3,632.25);
+	this.yesHint.setTransform(90,631.35,1,1,0,20.0002,0);
 
 	this.instance = new lib.ButtonSmall();
 	this.instance.setTransform(429.65,192.9,1,1,-135.0006);
@@ -2608,10 +2608,10 @@ if (reversed == null) { reversed = false; }
 	this.BTN_YES.name = "BTN_YES";
 	this.BTN_YES.setTransform(60,659.25,1.0874,1.0874,0,0,0,0.2,0.3);
 
-	this.instance_3 = new lib.CachedBmp_8();
-	this.instance_3.setTransform(223.1,831.9,0.5,0.5);
+	this.instance_3 = new lib.CachedBmp_10();
+	this.instance_3.setTransform(223.45,831.7,0.5,0.5);
 
-	this.instance_4 = new lib.CachedBmp_7();
+	this.instance_4 = new lib.CachedBmp_9();
 	this.instance_4.setTransform(-1.5,7.1,0.5,0.5);
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance_4},{t:this.instance_3},{t:this.BTN_YES},{t:this.BTN_NO},{t:this.instance_2},{t:this.BTN_TRANSMISSIONS},{t:this.instance_1},{t:this.instance},{t:this.yesHint},{t:this.noHint}]}).wait(1));
@@ -2640,67 +2640,66 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get(this.shape).wait(1));
 
 	// Layer_2
-	this.downHint = new cjs.Text("Context Hint", "19px 'Do Hyeon'", "#1768DA");
+	this.downHint = new cjs.Text("Context Hint", "22px 'Nova Square'", "#1768DA");
 	this.downHint.name = "downHint";
-	this.downHint.textAlign = "center";
-	this.downHint.lineHeight = 21;
-	this.downHint.lineWidth = 229;
+	this.downHint.lineHeight = 29;
+	this.downHint.lineWidth = 196;
 	this.downHint.parent = this;
-	this.downHint.setTransform(219.15,816.85,0.937,0.937);
+	this.downHint.setTransform(255.2521,802.15,1,0.9979,0,19.7921,0);
 
-	this.upHint = new cjs.Text("Context Hint", "19px 'Do Hyeon'", "#1768DA");
+	this.upHint = new cjs.Text("Context Hint", "22px 'Nova Square'", "#1768DA");
 	this.upHint.name = "upHint";
-	this.upHint.textAlign = "center";
-	this.upHint.lineHeight = 21;
-	this.upHint.lineWidth = 236;
+	this.upHint.textAlign = "right";
+	this.upHint.lineHeight = 29;
+	this.upHint.lineWidth = 207;
 	this.upHint.parent = this;
-	this.upHint.setTransform(221.5717,425.4,0.937,0.937);
+	this.upHint.setTransform(202.3516,445.05,1,0.9979,0,19.7924,0);
 
-	this.leftHint = new cjs.Text("Context Hint", "19px 'Do Hyeon'", "#1768DA");
+	this.leftHint = new cjs.Text("Context Hint", "22px 'Nova Square'", "#1768DA");
 	this.leftHint.name = "leftHint";
-	this.leftHint.lineHeight = 21;
-	this.leftHint.lineWidth = 133;
+	this.leftHint.lineHeight = 29;
+	this.leftHint.lineWidth = 141;
 	this.leftHint.parent = this;
-	this.leftHint.setTransform(33.8,581.4,0.937,0.937,-9.4606);
+	this.leftHint.setTransform(32.4,680.3,1,1,0,20.0002,0);
 
-	this.rightHint = new cjs.Text("Context Hint", "19px 'Do Hyeon'", "#1768DA");
+	this.rightHint = new cjs.Text("Context Hint", "22px 'Nova Square'", "#1768DA");
 	this.rightHint.name = "rightHint";
 	this.rightHint.textAlign = "right";
-	this.rightHint.lineHeight = 21;
-	this.rightHint.lineWidth = 135;
+	this.rightHint.lineHeight = 29;
+	this.rightHint.lineWidth = 149;
 	this.rightHint.parent = this;
-	this.rightHint.setTransform(407.568,582.2395,0.937,0.937,10.2345);
+	this.rightHint.setTransform(441.95,566.55,1,1,0,20.0002,0);
 
 	this.instance = new lib.PocketPalPlayerControls();
 	this.instance.setTransform(228.25,214.9,0.9366,0.9366,0,0,0,217.4,157.1);
 
 	this.BTN_RIGHT = new lib.DPadButtonRIGHT();
 	this.BTN_RIGHT.name = "BTN_RIGHT";
-	this.BTN_RIGHT.setTransform(404.95,632.75,0.9268,0.9268,90,0,0,0.1,-0.2);
+	this.BTN_RIGHT.setTransform(392.35,632.75,0.8259,0.8259,90,0,0,0.2,-0.4);
 
 	this.BTN_LEFT = new lib.DPadButtonLEFT();
 	this.BTN_LEFT.name = "BTN_LEFT";
-	this.BTN_LEFT.setTransform(34.15,631.65,0.9268,0.9268,-90,0,0,-0.1,-0.1);
+	this.BTN_LEFT.setTransform(61.85,631.8,0.8259,0.8259,-90,0,0,-0.2,0);
 
 	this.BTN_DOWN = new lib.DPadButtonDN();
 	this.BTN_DOWN.name = "BTN_DOWN";
-	this.BTN_DOWN.setTransform(179.8,687.8,0.9268,0.9268,0,0,0,-43.5,7.1);
+	this.BTN_DOWN.setTransform(191.65,681.85,0.8259,0.8259,0,0,0,-43.4,7.2);
 
 	this.BTN_UP = new lib.DPadButtonUP();
 	this.BTN_UP.name = "BTN_UP";
-	this.BTN_UP.setTransform(220.15,446.75,0.9268,0.9268,0,0,0,0.1,-0.1);
+	this.BTN_UP.setTransform(227.55,467.05,0.8259,0.8259,0,0,0,0.1,0);
 
-	this.instance_1 = new lib.CachedBmp_6();
+	this.instance_1 = new lib.CachedBmp_8();
 	this.instance_1.setTransform(58.9,2.05,0.5,0.5);
 
-	this.instance_2 = new lib.CachedBmp_5();
-	this.instance_2.setTransform(5.15,7,0.5,0.5);
+	this.instance_2 = new lib.CachedBmp_7();
+	this.instance_2.setTransform(-147.65,7,0.5,0.5);
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance_2},{t:this.instance_1},{t:this.BTN_UP},{t:this.BTN_DOWN},{t:this.BTN_LEFT},{t:this.BTN_RIGHT},{t:this.instance},{t:this.rightHint},{t:this.leftHint},{t:this.upHint},{t:this.downHint}]}).wait(1));
 
 	this._renderFirstFrame();
 
-}).prototype = getMCSymbolPrototype(lib.REGION2, new cjs.Rectangle(0,0,516.9,900), null);
+}).prototype = getMCSymbolPrototype(lib.REGION2, new cjs.Rectangle(-147.6,0,664.5,900), null);
 
 
 (lib.REGION1 = function(mode,startPosition,loop,reversed) {
@@ -2813,7 +2812,7 @@ if (reversed == null) { reversed = false; }
 	this._renderFirstFrame();
 
 }).prototype = p = new lib.AnMovieClip();
-p.nominalBounds = new cjs.Rectangle(900,450,923.0999999999999,479.4);
+p.nominalBounds = new cjs.Rectangle(752.4,450,1070.6999999999998,479.4);
 // library properties:
 lib.properties = {
 	id: 'F6615815F9884A46B3D7FC8DF2784958',
@@ -2823,7 +2822,7 @@ lib.properties = {
 	color: "#F5F3EB",
 	opacity: 1.00,
 	manifest: [
-		{src:"images/CachedBmp_4.png", id:"CachedBmp_4"},
+		{src:"images/CachedBmp_6.png", id:"CachedBmp_6"},
 		{src:"images/PodCube2025_atlas_1.png", id:"PodCube2025_atlas_1"},
 		{src:"images/PodCube2025_atlas_2.png", id:"PodCube2025_atlas_2"}
 	],

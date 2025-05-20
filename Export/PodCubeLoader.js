@@ -1,21 +1,26 @@
-const PodCubeLoader = {    // Load module classes first    
+/**
+ * PodCubeLoader - Loads and initializes the PodCube application.
+ * This class manages the loading of scripts, fonts, and initializes the core PodCube functionality.
+ */
+const PodCubeLoader = {
+    // Load module classes first
     moduleScripts: [
-        'scripts/PodCubeMSG.js',          // Base messaging system
-        'scripts/PodCube_Episode.js',      // Load Episode class first
-        'scripts/PodCube_Feed.js',         // Load Feed class before parsers
-        'scripts/PodCubeJSON.js',          // JSON feed parser
-        'scripts/PodCubeRSS.js',           // RSS feed parser
-        'scripts/PodCubeAudioPlayer.js',   // Audio player
-        'scripts/PodCubeBehaviorDispenser.js', // UI behaviors
-        'scripts/PodCubeContextManager.js', // Navigation contexts
-        'scripts/PodCubeScreenManager.js',  // Screen management
-        'scripts/PodCube_MemoryCartridge.js', // Persistent storage
+        'scripts/PodCubeMSG.js',          // Base messaging system - Handles communication between PodCube components.
+        'scripts/PodCube_Episode.js',      // Load Episode class first - Defines the structure and data for podcast episodes.
+        'scripts/PodCube_Feed.js',         // Load Feed class before parsers - Manages podcast feed data and parsing.
+        'scripts/PodCubeJSON.js',          // JSON feed parser - Parses podcast feeds from JSON format.
+        'scripts/PodCubeRSS.js',           // RSS feed parser - Parses podcast feeds from RSS format.
+        'scripts/PodCubeAudioPlayer.js',   // Audio player - Handles audio playback functionality.
+        'scripts/PodCubeBehaviorDispenser.js', // UI behaviors - Manages UI behaviors and interactions.
+        'scripts/PodCubeContextManager.js', // Navigation contexts - Manages navigation contexts and screen transitions.
+        'scripts/PodCubeScreenManager.js',  // Screen management - Handles screen management and display logic.
+        'scripts/PodCube_MemoryCartridge.js', // Persistent storage - Provides persistent storage for user data and settings.
     ],
 
     // Manager and screens load after modules
     screenScripts: [
-        'scripts/PodCube_Manager.js',      // Core manager (creates global instance)
-        'scripts/PodCube_Screen.js',       // Base screen class
+        'scripts/PodCube_Manager.js',      // Core manager (creates global instance) - Creates and manages the core PodCube manager instance.
+        'scripts/PodCube_Screen.js',       // Base screen class - Defines the base class for all PodCube screens.
         'scripts/screens/SC_TRANSMISSIONS.js',
         'scripts/screens/SC_QUEUE.js',
         'scripts/screens/SC_MAIN.js',
@@ -29,9 +34,15 @@ const PodCubeLoader = {    // Load module classes first
         'Convection',
         'Libre Barcode 39',
         'Linear Beam',
+        'Nova Square',
         'Sixtyfour:BLED,SCAN@13,-7',
     ],
 
+    /**
+     * Loads a script from a given URL.
+     * @param {string} scriptPath - The URL of the script to load.
+     * @returns {Promise} - A promise that resolves when the script is loaded successfully.
+     */
     loadScript: function(scriptPath) {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
@@ -45,34 +56,48 @@ const PodCubeLoader = {    // Load module classes first
         });
     },
 
+    /**
+     * Loads an array of scripts in order.
+     * @param {string[]} scripts - An array of script paths to load.
+     * @returns {Promise[]} - An array of promises, one for each script.
+     */
     loadScriptsInOrder: async function(scripts) {
         for (const script of scripts) {
             await this.loadScript(script);
         }
     },
 
+    /**
+     * Initializes the PodCube application.
+     * This function loads all necessary scripts and initializes the core PodCube functionality.
+     * @returns {Promise} - A promise that resolves when the initialization is complete.
+     */
     init: async function() {
         try {
             // Load module classes first
             console.log("Loading modules...");
             await this.loadScriptsInOrder(this.moduleScripts);
-            
+
             // Load manager and screens
             console.log("Loading manager and screens...");
             await this.loadScriptsInOrder(this.screenScripts);
-            
+
             // Initialize PodCube (but it will wait for Animate)
             console.log("Creating PodCube instance...");
-            new PodCube_Manager();
-            
+            new PodCube_Manager(); // Create the manager instance
+
             // Signal core scripts are ready
             console.log("Core initialization complete");
-            
+
         } catch (error) {
             console.error("Script loading failed:", error);
         }
     },
 
+    /**
+     * Loads fonts from Google Fonts and other sources.
+     * This function fetches and links the necessary font stylesheets.
+     */
     loadFonts: function() {
         const preconnectGoogleApis = document.createElement('link');
         preconnectGoogleApis.rel = 'preconnect';
