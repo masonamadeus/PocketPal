@@ -1,4 +1,4 @@
-class MessageSystem {
+export class MessageSystem {
     constructor() {
         this._subscriptions = {};
         this.debugEnabled = true;
@@ -63,6 +63,7 @@ class MessageSystem {
     pub(...args) { return this.publish(...args); }
     log(...args) { return this.debug(...args); }
 }
+
 
 
 

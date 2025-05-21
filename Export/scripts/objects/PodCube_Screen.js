@@ -1,8 +1,9 @@
-class PodCubeScreen {
+export class PodCubeScreen {
     constructor(screenInstance) {
         if (this.constructor === PodCube.PodCubeScreen) {
             throw new Error('PodCubeScreen is an abstract class and cannot be instantiated directly');
         }
+
         this.screenInstance = screenInstance;
     }
 
@@ -12,12 +13,15 @@ class PodCubeScreen {
             return;
         }
         this.initialized = true;
+        console.log('init called in parent screen class')
         this.onInit();
     }
 
     // Override these methods in your screen classes
     onInit() {}
-    destroy() {}
+    destroy() {
+
+    }
 
     // Utility method to find a child by name in the screen instance
     getChild(name) {

@@ -1,18 +1,8 @@
-class ContextManager {
+export class ContextManager {
     static ACTIONS = ['up', 'down', 'left', 'right', 'yes', 'no'];
-    static BUTTON_ALIASES = {
-        up: '⬆️',
-        down: '⬇️',
-        left: '⬅️',
-        right: '➡️',
-        yes: '⭕',
-        no: '❌'
-    };
-    
     
     constructor() {        this._contexts = {};
         this._current = null;
-        this.contextHintsSymbol = null;
 
         this.buttonAliases = {...ContextManager.BUTTON_ALIASES}; // Allow instance overrides
         
@@ -22,13 +12,6 @@ class ContextManager {
                 () => this.handleNav(action));
         });
 
-    }
-
-    setButtonAlias(button, alias) {
-        if (ContextManager.ACTIONS.includes(button)) {
-            this.buttonAliases[button] = alias;
-            this.updateContextHints(); // Refresh display if needed
-        }
     }
 
     registerContext(name, config) {
@@ -61,23 +44,27 @@ class ContextManager {
         } else {
             console.warn(`ContextManager: Context "${name}" not registered.`);
         }
-    }        updateContextHints() {
-        if (!this._current) return;
+    }        
+    
+    updateContextHints() {
+        //if (!this._current) return;
 
         const context = this._contexts[this._current];
-        if (!context) return;
+        //if (!context) return;
 
         // Clear all hints first
-        this.yesHintSymbol.text = "";
-        this.noHintSymbol.text = "";
-        this.leftHintSymbol.text = "";
-        this.rightHintSymbol.text = "";
+        this.yesHint.text = "P Button";
+        this.noHint.text = "C Button";
+        this.leftHint.text = "Left";
+        this.rightHint.text = "Right";
+        this.upHint.text = "Up";
+        this.downHint.text = "Down";
 
         // Update each hint if there's a handler and hint text
         ContextManager.ACTIONS.forEach(action => {
             if (context.handlers[action] && context.hints[action]) {
                 // Get corresponding hint symbol for this action
-                const hintSymbol = this[`${action}HintSymbol`];
+                const hintSymbol = this[`${action}Hint`];
                 if (hintSymbol) {
                     hintSymbol.text = context.hints[action];
                 }

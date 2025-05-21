@@ -11,7 +11,7 @@
  * - Playback-Error: When playback errors occur
  * - Queue-Ended: When reaching the end of queue
  */
-class PodCubeAudioPlayer {
+export class PodCubeAudioPlayer {
     /**
      * Creates a new PodCubeAudioPlayer instance and sets up event listeners.
      */

@@ -1,4 +1,6 @@
-class SC_TRANSMISSIONS extends PodCubeScreen {
+import { PodCubeScreen } from "../objects/PodCube_Screen.js";
+
+export class SC_TRANSMISSIONS extends PodCubeScreen {
 
     constructor(screenInstance) {
         super(screenInstance);
@@ -49,10 +51,13 @@ class SC_TRANSMISSIONS extends PodCubeScreen {
         PodCube.ContextManager.registerContext("transmissions-list", {
             up: [() => {
                 if (this.selectedIndex > 0) this.updateSelection(this.selectedIndex - 1)
-                }, "Previous"],
+                }, 
+                "Previous"],
+
             down: [() => {
                 if (this.selectedIndex < this.episodeSymbols.length - 1) this.updateSelection(this.selectedIndex + 1);
-                }, "Next"],
+                },
+                "Next"],
             right: [() => {
                 const selectedSymbol = this.episodeSymbols[this.selectedIndex];
                 if (!selectedSymbol) return;
@@ -60,7 +65,7 @@ class SC_TRANSMISSIONS extends PodCubeScreen {
                 PodCube.ContextManager.setContext("transmissions-details");
                 this.scrollToTop(selectedSymbol);
                 this.scrollContainer.setChildIndex(selectedSymbol, this.scrollContainer.numChildren - 1);
-            }, "Details"],
+                },"Details"],
             left: [() => {
                 ScreenManager.goBack();
             }, "Back"],

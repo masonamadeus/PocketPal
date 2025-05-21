@@ -1,6 +1,8 @@
 // RESPONSIBLE FOR DISPENSING INTERACTION LOGIC THAT WAS TOO COMPLICATED FOR ME TO CODE UP IN THE SHITTY INTERNAL EDITOR, PLUS I DON'T TRUST IT LOL.
+import { Episode } from "../objects/PodCube_Episode.js";
 
-class BehaviorManager {
+
+export class BehaviorManager {
     constructor() {
         this.registeredSymbols = [];
 
@@ -49,6 +51,7 @@ class BehaviorManager {
         thing.isPressed = false;
         thing.halfwayPoint = Math.floor(thing.totalFrames / 2) - 1;
         thing.hoverPoint = Math.ceil(thing.totalFrames / 3) - 1;
+        thing.title = thing.keybind;
 
         // THE PRIMARY ACTION IS THE THING THAT HAPPENS WHEN YOU PRESS THE BUTTON
         thing.primaryAction = function () {

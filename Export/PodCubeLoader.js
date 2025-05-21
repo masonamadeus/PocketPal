@@ -2,25 +2,34 @@
  * PodCubeLoader - Loads and initializes the PodCube application.
  * This class manages the loading of scripts, fonts, and initializes the core PodCube functionality.
  */
+
+
+// OUTDATED IF WE ARE USING THE NEW MODULES
+
 const PodCubeLoader = {
+
+    // Object classes load first
+    objectScripts: [
+        'scripts/objects/PodCube_Episode.js',
+        'scripts/objects/PodCube_Feed.js',
+        'scripts/objects/PodCube_Screen.js', // Base screen class - Defines the base class for all Pod
+    ],
+
     // Load module classes first
     moduleScripts: [
-        'scripts/PodCubeMSG.js',          // Base messaging system - Handles communication between PodCube components.
-        'scripts/PodCube_Episode.js',      // Load Episode class first - Defines the structure and data for podcast episodes.
-        'scripts/PodCube_Feed.js',         // Load Feed class before parsers - Manages podcast feed data and parsing.
-        'scripts/PodCubeJSON.js',          // JSON feed parser - Parses podcast feeds from JSON format.
-        'scripts/PodCubeRSS.js',           // RSS feed parser - Parses podcast feeds from RSS format.
-        'scripts/PodCubeAudioPlayer.js',   // Audio player - Handles audio playback functionality.
-        'scripts/PodCubeBehaviorDispenser.js', // UI behaviors - Manages UI behaviors and interactions.
-        'scripts/PodCubeContextManager.js', // Navigation contexts - Manages navigation contexts and screen transitions.
-        'scripts/PodCubeScreenManager.js',  // Screen management - Handles screen management and display logic.
-        'scripts/PodCube_MemoryCartridge.js', // Persistent storage - Provides persistent storage for user data and settings.
+        'scripts/modules/PodCubeJSON.js',          // JSON feed parser - Parses podcast feeds from JSON format.
+        'scripts/modules/PodCubeRSS.js',           // RSS feed parser - Parses podcast feeds from RSS format.
+        'scripts/modules/PodCubeAudioPlayer.js',   // Audio player - Handles audio playback functionality.
+        'scripts/modules/PodCubeBehaviorDispenser.js', // UI behaviors - Manages UI behaviors and interactions.
+        'scripts/modules/PodCubeContextManager.js', // Navigation contexts - Manages navigation contexts and screen transitions.
+        'scripts/modules/PodCubeScreenManager.js',  // Screen management - Handles screen management and display logic.
+        'scripts/modules/PodCube_MemoryCartridge.js', // Persistent storage - Provides persistent storage for user data and settings.
+        'scripts/modules/PodCubeMSG.js',          // Base messaging system - Handles communication between PodCube components.
     ],
 
     // Manager and screens load after modules
     screenScripts: [
         'scripts/PodCube_Manager.js',      // Core manager (creates global instance) - Creates and manages the core PodCube manager instance.
-        'scripts/PodCube_Screen.js',       // Base screen class - Defines the base class for all PodCube screens.
         'scripts/screens/SC_TRANSMISSIONS.js',
         'scripts/screens/SC_QUEUE.js',
         'scripts/screens/SC_MAIN.js',
@@ -74,20 +83,25 @@ const PodCubeLoader = {
      */
     init: async function() {
         try {
+
+            console.log("://INITIALIZING PODCUBE(pocketpal);")
+            console.log("://STATUS(...) {Defrigulating Object Classes...}");
+            await this.loadScriptsInOrder(this.objectScripts);
+
             // Load module classes first
-            console.log("Loading modules...");
+            console.log("://STATUS(...) {Preparing PocketPal Modules...}");
             await this.loadScriptsInOrder(this.moduleScripts);
 
             // Load manager and screens
-            console.log("Loading manager and screens...");
+            console.log("://STATUS(...) {Booting PodCube Manager Components...}");
             await this.loadScriptsInOrder(this.screenScripts);
 
             // Initialize PodCube (but it will wait for Animate)
-            console.log("Creating PodCube instance...");
+            console.log("://STATUS(...) {Initializing PodCube Manager...}");
             new PodCube_Manager(); // Create the manager instance
 
             // Signal core scripts are ready
-            console.log("Core initialization complete");
+            console.log("://STATUS(...) {PodCube™ PocketPal is ready!}");
 
         } catch (error) {
             console.error("Script loading failed:", error);
@@ -98,6 +112,7 @@ const PodCubeLoader = {
      * Loads fonts from Google Fonts and other sources.
      * This function fetches and links the necessary font stylesheets.
      */
+
     loadFonts: function() {
         const preconnectGoogleApis = document.createElement('link');
         preconnectGoogleApis.rel = 'preconnect';

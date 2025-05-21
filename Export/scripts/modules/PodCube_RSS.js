@@ -1,6 +1,6 @@
 // PodCubeRSS.js - RSS Feed parser module
 
-class PodCubeRSS {
+export class PodCubeRSS {
     constructor() {
         this.FEED_URL = "https://pinecast.com/feed/pc";
         this.lastUpdated = null;
@@ -87,5 +87,6 @@ class PodCubeRSS {
         }
     }
 }
+
 
 // #endregion

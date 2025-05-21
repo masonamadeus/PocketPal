@@ -16,6 +16,16 @@
  * - BehaviorManager: Manages UI component behaviors
  */
 
+import { MessageSystem } from './modules/PodCube_MSG.js';
+import { MemoryCartridge } from './modules/PodCube_MemoryCartridge.js';
+import { PodCubeJSON } from './modules/PodCube_JSON.js';
+import { ContextManager } from './modules/PodCube_ContextManager.js';
+import { ScreenManager } from './modules/PodCube_ScreenManager.js';
+import { PodCubeAudioPlayer } from './modules/PodCube_AudioPlayer.js';
+import { BehaviorManager } from './modules/PodCube_BehaviorManager.js';
+import { PodCubeRSS } from './modules/PodCube_RSS.js';
+
+
 class PodCube_Manager {
     constructor() {
         // System readiness flag
@@ -68,13 +78,14 @@ class PodCube_Manager {
         // Get reference to Adobe Animate library
         // This contains all exported symbols (screens, UI components, etc.)
         this.lib = AdobeAn.getComposition(AdobeAn.bootcompsLoaded[0]).getLibrary();
-        this.ContextManager.contextHintsSymbol = exportRoot.region_1.contextHints;
-        this.ContextManager.upHintSymbol = exportRoot.region_2.upHint;
-        this.ContextManager.downHintSymbol = exportRoot.region_2.downHint;
-        this.ContextManager.leftHintSymbol = exportRoot.region_2.leftHint;
-        this.ContextManager.rightHintSymbol = exportRoot.region_2.rightHint;
-        this.ContextManager.yesHintSymbol = exportRoot.region_3.yesHint;
-        this.ContextManager.noHintSymbol = exportRoot.region_3.noHint;
+
+        // pass references directly to the text fields of each context hint, to the contextmanager
+        this.ContextManager.upHint = exportRoot.region_2.upHint.label;
+        this.ContextManager.downHint = exportRoot.region_2.downHint.label;
+        this.ContextManager.leftHint = exportRoot.region_2.leftHint.label;
+        this.ContextManager.rightHint = exportRoot.region_2.rightHint.label;
+        this.ContextManager.yesHint = exportRoot.region_3.yesHint.label;
+        this.ContextManager.noHint = exportRoot.region_3.noHint.label;
         this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
 
         // Mark system as ready for operation
@@ -83,4 +94,9 @@ class PodCube_Manager {
 
 
 }
+
+export { PodCube_Manager as PodCube };
+
+// Initialize the PodCube manager instance
+const PodCube = new PodCube_Manager();
 

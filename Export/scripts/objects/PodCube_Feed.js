@@ -1,5 +1,5 @@
 // PodCube_Feed.js - Feed data structure and methods
-class Feed {
+export class Feed {
     constructor(metadata, episodes) {
         this.metadata = {
             title: metadata?.title || "PodCube Feed",

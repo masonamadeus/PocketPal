@@ -1,4 +1,6 @@
-class SC_Queue extends PodCubeScreen {
+import { PodCubeScreen } from "../objects/PodCube_Screen.js";
+
+export class SC_Queue extends PodCubeScreen {
     constructor(screenInstance) {
         this.queueListView = null;
         this.initialized = false;
@@ -41,4 +43,5 @@ class SC_Queue extends PodCubeScreen {
         stage.update();
     }
 };
+
 

@@ -8,7 +8,7 @@
  * - Manages cache expiration
  * - Follows naming conventions for stored data
  */
-class MemoryCartridge {
+export class MemoryCartridge {
     constructor() {
         this.prefix = 'podcube_';  // Namespace our storage keys
         this.defaultTTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -291,3 +291,4 @@ class MemoryCartridge {
         PodCube.MSG.publish('MemoryCartridge-Formatted');
     }
 }
+

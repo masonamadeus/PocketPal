@@ -105,6 +105,7 @@ function initResponsiveLayout() {
     var movieClip2Height = movieClip2.nominalBounds.height;
     var movieClip3Width = movieClip3.nominalBounds.width;
     var movieClip3Height = movieClip3.nominalBounds.height;
+
     // Assuming movieClip1 is the base size (900x900 originally), and 2 & 3 are half width
     var movieClipSize = 900; // Base size (width of region_1 in portrait)
     var movieClipHalfWidth = movieClipSize / 2; // Half width for region_2 and region_3
@@ -151,8 +152,23 @@ function initResponsiveLayout() {
 	window.addEventListener('resize', resizeCanvas);
 }
 </script>
+
 <!-- write your code here -->
-<script src="PodCubeLoader.js"></script>
+<script type="module" src="./scripts/PodCube_Manager.js"></script>
+<link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f5f3eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="images/PodCube2025_atlas_1.png">
+    <script>
+    // Register service worker for PWA installability
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    }
+    </script>
 </head>
 <body onload="init();" style="margin:0px;">
 	<div id="animation_container" style="background-color:rgba(245, 243, 235, 1.00);">

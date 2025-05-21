@@ -8,7 +8,10 @@
  * - Manages screen controllers
  * - Coordinates with Adobe Animate/CreateJS stage
  */
-class ScreenManager {
+
+import * as ScreenList from '../screens/ScreenList.js'; // Import all screens
+
+export class ScreenManager {
     /**
      * Initialize the ScreenManager and set up navigation event handlers
      */
@@ -181,6 +184,23 @@ class ScreenManager {
             const screenSymbol = new PodCube.lib[linkageName]();
             screenSymbol.linkageName = linkageName;
 
+            const controllerName = linkageName; // All screens share the same linkageName and module class name.
+            // Check if a controller class exists in the PodCube namespace
+            if (ScreenList[controllerName]) {
+                // Create an instance of the controller
+                const controllerClass = ScreenList[controllerName];
+                const controllerInstance = new controllerClass(screenSymbol);
+               
+
+                // Attach the controller to the screen symbol
+                screenSymbol.controller = controllerInstance;
+
+                // Initialize the controller if it has an init method
+                if (typeof controllerInstance.init === "function") {
+                    controllerInstance.init();
+                }
+            }
+
             return screenSymbol;
 
         } catch (error) {
@@ -333,5 +353,5 @@ class ScreenManager {
     }
 }
 
-// End of ScreenManager class
+
 // Note: Navigation button handlers are registered by PodCube instance

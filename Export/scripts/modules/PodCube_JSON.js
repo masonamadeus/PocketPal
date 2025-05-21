@@ -1,4 +1,10 @@
-class PodCubeJSON {
+import { Episode } from "../objects/PodCube_Episode.js";
+import { Feed } from "../objects/PodCube_Feed.js";
+// PodCubeJSON.js - JSON Feed parser module
+
+export class PodCubeJSON {
+
+
     constructor() {
         this.FEED_URL = "https://pinecast.com/jsonfeed/pc";
     }

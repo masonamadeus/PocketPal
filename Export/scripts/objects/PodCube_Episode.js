@@ -3,7 +3,7 @@
  * This class handles the structured data for each episode including location hierarchy,
  * recording details, and playback information.
  */
-class Episode {
+export class Episode {
     /**
      * List of all properties that define an episode's data structure.
      * Each property is documented with its purpose and usage within the application.
@@ -173,3 +173,4 @@ class Episode {
         };
     }
 }
+
