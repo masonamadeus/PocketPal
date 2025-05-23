@@ -1,5 +1,5 @@
 // RESPONSIBLE FOR DISPENSING INTERACTION LOGIC THAT WAS TOO COMPLICATED FOR ME TO CODE UP IN THE SHITTY INTERNAL EDITOR, PLUS I DON'T TRUST IT LOL.
-import { Episode } from "../objects/PodCube_Episode.js";
+import { Episode } from "../classes/PodCube_Episode.js";
 
 
 export class BehaviorManager {
@@ -36,6 +36,7 @@ export class BehaviorManager {
                         value = episode[prop].toString();
                     }
 
+                    
                     episodeSymbol[prop].text = value
 
                 }
@@ -44,6 +45,9 @@ export class BehaviorManager {
             }
         });
     }
+
+    // THIS IS THE BUTTON CLASS
+    // IT'S A CLASS THAT HANDLES BUTTONS AND THEIR INTERACTIONS
     Button(thing) {
         thing.initialized = true;
         thing.isDebouncing = false;
@@ -109,6 +113,8 @@ export class BehaviorManager {
             });
         }
     }
+
+    // THIS SETS UP A HIT AREA FOR ANY SYMBOL THAT HAS NOMINAL BOUNDS
 
     setHitArea(thing) {
         if (!thing.nominalBounds) {

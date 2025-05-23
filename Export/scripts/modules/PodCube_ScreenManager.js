@@ -184,11 +184,10 @@ export class ScreenManager {
             const screenSymbol = new PodCube.lib[linkageName]();
             screenSymbol.linkageName = linkageName;
 
-            const controllerName = linkageName; // All screens share the same linkageName and module class name.
             // Check if a controller class exists in the PodCube namespace
-            if (ScreenList[controllerName]) {
+            if (ScreenList[linkageName]) {
                 // Create an instance of the controller
-                const controllerClass = ScreenList[controllerName];
+                const controllerClass = ScreenList[linkageName];
                 const controllerInstance = new controllerClass(screenSymbol);
                
 

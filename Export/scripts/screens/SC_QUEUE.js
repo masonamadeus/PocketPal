@@ -1,4 +1,4 @@
-import { PodCubeScreen } from "../objects/PodCube_Screen.js";
+import { PodCubeScreen } from "../classes/PodCube_Screen.js";
 
 export class SC_Queue extends PodCubeScreen {
     constructor(screenInstance) {

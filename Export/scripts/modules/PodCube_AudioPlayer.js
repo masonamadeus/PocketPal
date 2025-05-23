@@ -16,6 +16,7 @@ export class PodCubeAudioPlayer {
      * Creates a new PodCubeAudioPlayer instance and sets up event listeners.
      */
     constructor() {
+        this.shortcuts = ['pplay', 'pback', 'pfwd', 'pque' ];
         this.audio = new Audio();
         this.queue = [];
         this.currentIndex = -1;
@@ -26,8 +27,37 @@ export class PodCubeAudioPlayer {
         this.audio.addEventListener("pause", () => this.onPause());
         this.audio.addEventListener("timeupdate", () => this.onTimeUpdate());
         this.audio.addEventListener("error", (e) => this.onError(e));
+
+        this.shortcuts.forEach(shortcut => {
+            console.log("PodCubeAudioPlayer: Registering shortcut", shortcut);
+            PodCube.MSG.subscribe(`Pressed-BTN_${shortcut.toUpperCase()}`, () => {
+                this.handleShortcut(shortcut);
+            });
+        });
     }
 
+    handleShortcut(shortcut) {
+        switch (shortcut) {
+            case 'pplay':
+                if (this.audio.paused) {
+                    this.play();
+                } else {
+                    this.pause();
+                }
+                break;
+            case 'pback':
+                this.previous();
+                break;
+            case 'pfwd':
+                this.skipForward();
+                break;
+            case 'pque':
+                PodCube.MSG.publish("Queue-Requested");
+                break;
+            default:
+                console.warn("PodCubeAudioPlayer: Unknown shortcut", shortcut);
+        }
+    }
     /**
      * Adds an episode to the playback queue.
      * If this is the first episode, it will start playing automatically.

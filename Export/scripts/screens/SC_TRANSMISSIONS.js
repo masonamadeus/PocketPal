@@ -1,38 +1,33 @@
-import { PodCubeScreen } from "../objects/PodCube_Screen.js";
+import { PodCubeScreen } from "../classes/PodCube_Screen.js";
+import { Context } from "../classes/PodCube_Context.js";
 
 export class SC_TRANSMISSIONS extends PodCubeScreen {
 
     constructor(screenInstance) {
         super(screenInstance);
+        // this.screenInstance = screenInstance; (from super)
         this.episodeSymbols = [];
         this.selectedIndex = 0;
         this.listView = null;
         this.scrollContainer = null;
+        this.contexts = {} // Store contexts here if needed
 
-        this.init(screenInstance);
 
     }
 
-    init(screenInstance) {
-
-        // PREVENT MULTIPLE INITIALIZATIONS
-        if (this.initialized) {
-            console.warn("SC_TRANSMISSIONS: Already initialized. Skipping re-initialization.");
-            this.updateSelection(0);
-            return;
-        }
-        this.initialized = true;
+    onInit() {
 
         // ATTACH LISTVIEW CONTAINER
-        this.listView = screenInstance.LISTVIEW;
+        this.listView = this.screenInstance.LISTVIEW;
         if (!this.listView) {
             console.error("SC_TRANSMISSIONS: LISTVIEW instance not found.");
             return;
         }
 
         // Register navigation contexts
-        if (window.PodCube.ContextManager) {
+        if (PodCube.ContextManager) {
             this.registerContexts()
+            PodCube.log("SC_TRANSMISSIONS: Contexts registered.");
         }
 
         // Create scroll container and mask
@@ -48,55 +43,42 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
 
     registerContexts() { // LIST VIEW
 
-        PodCube.ContextManager.registerContext("transmissions-list", {
-            up: [() => {
-                if (this.selectedIndex > 0) this.updateSelection(this.selectedIndex - 1)
-                }, 
-                "Previous"],
-
-            down: [() => {
-                if (this.selectedIndex < this.episodeSymbols.length - 1) this.updateSelection(this.selectedIndex + 1);
+        var listViewContext = new PodCube.Class.Context({
+            name: "transmissionslist",
+            handlers: {
+                up: {
+                    handler: () => {
+                        this.updateSelection(Math.max(this.selectedIndex - 1, 0));
+                    },
+                    hint: "Upward"
                 },
-                "Next"],
-            right: [() => {
-                const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-                if (!selectedSymbol) return;
-                selectedSymbol.gotoAndStop("details");
-                PodCube.ContextManager.setContext("transmissions-details");
-                this.scrollToTop(selectedSymbol);
-                this.scrollContainer.setChildIndex(selectedSymbol, this.scrollContainer.numChildren - 1);
-                },"Details"],
-            left: [() => {
-                ScreenManager.goBack();
-            }, "Back"],
-            yes: [() => {const selectedSymbol = 
-                this.episodeSymbols[this.selectedIndex];
-                if (!selectedSymbol) return;
-                PodCube.Player.addToQueue(selectedSymbol.episode);
-            }, "Queue"],
-            no: [() => this.popOutDataDisk(this.episodeSymbols[this.selectedIndex].episode), "Pop Out"]
+                down: {
+                    handler: () => {
+                        this.updateSelection(Math.min(this.selectedIndex + 1, this.episodeSymbols.length - 1));
+                    },
+                    hint: "Down"
+                },
+                yes: {
+                    handler: () => {
+                        const selectedEpisode = this.episodeSymbols[this.selectedIndex].episode;
+                        PodCube.Player.addToQueue(selectedEpisode);
+                    },
+                    hint: "Add to Queue"
+                },
+                no: {
+                    handler: () => {
+                        this.scrollToTop();
+                        this.updateSelection(0)
+                    },
+                    hint: "Back to top"
+                },
+            }
         });
 
-        //DETAILS VIEW
-        PodCube.ContextManager.registerContext("transmissions-details", {
-            up: [() => null],
-            down: [() => null],
-            left: [() => {
-                const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-                if (!selectedSymbol) return;
-                selectedSymbol.gotoAndStop("list-selected");
-                this.scrollSelectionToCenter();
-                PodCube.ContextManager.setContext("transmissions-list");
-            }, "Back"],
-            right: [() => null],
-            yes: [() => {
-                const selectedSymbol = this.episodeSymbols[this.selectedIndex];
-                if (!selectedSymbol) return;
-                PodCubePlayer.playEpisode(selectedSymbol.episode);
-            }, "Add to Queue"],
-            no: [() => null, "Pop Out"]
-        });
+        PodCube.ContextManager.setContext(listViewContext);
+        
 
+        
     }
 
 
@@ -127,9 +109,8 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
         this.updateSelection(0);
 
         // Set initial context after population
-        if (PodCube.ContextManager) {
-            PodCube.ContextManager.setContext("transmissions-list");
-        } stage.update();
+
+        stage.update();
 
         PodCube.MSG.publish("Transmissions-Ready", this.episodeSymbols);
         PodCube.MSG.log("SC_TRANSMISSIONS: Transmissions are ready and populated.");

@@ -1,5 +1,5 @@
-import { Episode } from "../objects/PodCube_Episode.js";
-import { Feed } from "../objects/PodCube_Feed.js";
+import { Episode } from "../classes/PodCube_Episode.js";
+import { Feed } from "../classes/PodCube_Feed.js";
 // PodCubeJSON.js - JSON Feed parser module
 
 export class PodCubeJSON {
@@ -103,6 +103,6 @@ export class PodCubeJSON {
             total: episodes.length
         };
 
-        return new Feed(metadata, episodes);
+        return new PodCube.Class.Feed(metadata, episodes);
     }
 };
