@@ -7,26 +7,26 @@ export class Context {
     /**
      * Creates an instance of Context.
      * @param {Object} [config={}] - Configuration object for the context.
-     * @param {string} [config.name='default'] - Name of the context.
      * @param {Object} [config.handlers={}] - Handlers for various actions.
      * @param {Object} [config.hints={}] - Hints for various actions.
      */
-    constructor(config = {}) {
-        this.name = config.name || 'default';
+    constructor( name = "unnamed-context", config = {}) {
         this.handlers = {};
         this.hints = {};
+        this.name = name;
+
 
         for (const action of PodCube.ContextManager.actions) {
-            const entry = config.handlers[action];
+            const entry = config[action];
             if (!entry) continue;
 
-            if (typeof entry.handler === 'function') {
-                this.handlers[action] = entry.handler;
+            if (typeof entry === 'function') {
+                this.handlers[action] = entry;
                 if (typeof entry.hint === 'string') {
-                    this.hints[action] = entry.hint;
+                    this.hints[action] = entry;
                 }
             } else {
-                console.warn(`[Context] Invalid handler for action "${action}" in context "${config.name}"`);
+                console.warn(`[Context] Invalid handler for action "${action}" in context "${name}"`);
             }
         }
 

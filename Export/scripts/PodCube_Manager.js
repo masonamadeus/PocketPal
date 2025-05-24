@@ -29,7 +29,13 @@ import * as PodCubeClasses from './classes/ClassList.js'; // Import all PodCube 
 class PodCube_Manager {
     constructor() {
         this.Class = {}   // Object classes will be attached here
-
+        
+        window.onerror = (message, source, lineno, colno, error) => this.handleError(message, source, lineno, colno, error);
+        
+        window.playSound = function (id) {
+            return createjs.Sound.play(id);
+        };
+        
         window.PodCube = this; // Expose the instance globally for easy access
         this.fontFaces = [
         'Do Hyeon',
@@ -41,6 +47,7 @@ class PodCube_Manager {
         'Linear Beam',
         'Nova Square',
         'Sixtyfour:BLED,SCAN@13,-7',
+        'Jersey 25 Charted'
         ];
         this.loadFonts(); // Load fonts from Google Fonts
         
@@ -88,6 +95,26 @@ class PodCube_Manager {
         return this._feed;
     }
 
+    handleError(message, source, lineno, colno, error){
+        PodCube.errorText = this.formatError(error || { message, source, lineno, colno });
+        this.ScreenManager.loadScreen("SC_BUSTED");
+
+    }
+
+    formatError(err) {
+        if (!err) return "Unknown error";
+
+        let msg = `Error: ${err.message || err.toString()}`;
+
+        if (err.stack) {
+            msg += `\nStack:\n${err.stack}`;
+        } else if (err.lineno !== undefined && err.colno !== undefined && err.source) {
+            msg += `\nAt ${err.source}:${err.lineno}:${err.colno}`;
+        }
+
+        return msg;
+    }
+
     // Initialize core subsystems in dependency order:
     initializePodCubeModules() {
         this.MSG = new MessageSystem();           // 1. Message bus (needed by everything)
@@ -114,10 +141,15 @@ class PodCube_Manager {
 
     }
 
-    _handleAnimateReady() {
+        _handleAnimateReady() {
         // Get reference to Adobe Animate library
         // This contains all exported symbols (screens, UI components, etc.)
         this.lib = AdobeAn.getComposition(AdobeAn.bootcompsLoaded[0]).getLibrary();
+        this.lib.properties.manifest.forEach(item => {
+            if (item.src.endsWith(".mp3") || item.src.endsWith(".wav")) {
+                createjs.Sound.registerSound(item.src, item.id);
+            }
+        });
 
         this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
 

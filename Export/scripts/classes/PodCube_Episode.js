@@ -95,7 +95,7 @@ export class Episode {
         
         // Audio Properties
         this.audioUrl = data.audioUrl || null;
-        this.duration = data.duration || 0;
+        this._duration = data.duration || 0;
         this.size = data.size || 0;
     }
 
@@ -109,6 +109,18 @@ export class Episode {
         return [this.origin, this.locale, this.region, this.zone, this.planet]
             .filter(Boolean)
             .join(", ");
+    }
+
+    get locationNewLines() {
+        return [
+            this.origin, 
+            this.locale, 
+            this.region, 
+            this.zone, 
+            this.planet
+        ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     get longDate() {
@@ -130,6 +142,21 @@ export class Episode {
 
     get integrity() {
         return this.integrityFloat.toString() + "%";
+    }
+
+    get duration() {
+        const minutes = Math.floor(this._duration / 60);
+        const fractions = (this._duration % 60) / 60;
+        const weirdMinutes = (minutes + fractions).toFixed(2);
+
+        // 1% chance to append something weird
+        const suffixPool = ["ish", "?", "approx.", "give or take", "in frog time", "🤷‍♂️"];
+        const suffix = Math.random() < 0.01
+            ? suffixPool[Math.floor(Math.random() * suffixPool.length)]
+            : "";
+
+        return `${weirdMinutes}${suffix}`;
+
     }
 
     /**

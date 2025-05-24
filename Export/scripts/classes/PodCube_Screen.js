@@ -5,6 +5,7 @@ export class PodCubeScreen {
         }
 
         this.screenInstance = screenInstance;
+        this.currentContext = null;
     }
 
     init() {
@@ -19,6 +20,13 @@ export class PodCubeScreen {
 
     // Override these methods in your screen classes
     onInit() {}
+
+    onShow() {
+        if (this.currentContext) {
+            PodCube.ContextManager.setContext(this.currentContext);
+        }
+    }
+    
     destroy() {
 
     }

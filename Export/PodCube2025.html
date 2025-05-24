@@ -55,6 +55,7 @@ function init() {
 	var comp=AdobeAn.getComposition("F6615815F9884A46B3D7FC8DF2784958");
 	var lib=comp.getLibrary();
 	var loader = new createjs.LoadQueue(false);
+	loader.installPlugin(createjs.Sound);
 	loader.addEventListener("fileload", function(evt){handleFileLoad(evt,comp)});
 	loader.addEventListener("complete", function(evt){handleComplete(evt,comp)});
 	var lib=comp.getLibrary();
@@ -153,6 +154,8 @@ function initResponsiveLayout() {
 	resizeCanvas();
 	window.addEventListener('resize', resizeCanvas);
 }
+function playSound(id, loop, offset) {
+	return createjs.Sound.play(id, {'interrupt':createjs.Sound.INTERRUPT_EARLY, 'loop': loop, 'offset': offset});}
 </script>
 <!-- write your code here -->
 <script src="PodCubeLoader.js"></script>

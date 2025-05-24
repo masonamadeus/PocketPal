@@ -4,55 +4,48 @@ export class SC_MAIN extends PodCubeScreen {
     constructor(screenSymbol) {
         // call constructor of the parent class
         super(screenSymbol);
-        // call init of parent class, which will call onInit
-        this.init();
     }
 
 
     registerContexts() {
-        const mainScreenContext = new PodCube.Class.Context({
-            name: "main-screen",
-            handlers: {
-                up: {
-                    handler: () => {
-                        this.handleUp();
-                    },
-                    hint: "Upward"
-                },
-                down: {
-                    handler: () => {
-                        this.handleDown();
-                    },
-                    hint: "Down"
-                },
-                left: {
-                    handler: () => {
-                        this.handleLeft();
-                    },
-                    hint: "Left"
-                },
-                right: {
-                    handler: () => {
-                        this.handleRight();
-                    },
-                    hint: "Right"
-                },
-                yes: {
-                    handler: () => {
-                        this.handleYes();
-                    },
-                    hint: "P Button"
+        PodCube.ContextManager.define("Main Screen", {
+            up: {
+                hint: "Upward",
+                handler(ctx) {
+                    PodCube.log("Up pressed");
                 }
-                ,
-                no: {
-                    handler: () => {
-                        this.handleNo();
-                    },
-                    hint: "C Button"
-                },
+            },
+            down: {
+                hint: "Down",
+                handler(ctx) {
+                    PodCube.log("Down pressed");
+                }
+            },
+            left: {
+                hint: "Left",
+                handler(ctx) {
+                    PodCube.log("Left pressed");
+                }
+            },
+            right: {
+                hint: "Right",
+                handler(ctx) {
+                    PodCube.log("Right pressed");
+                }
+            },
+            yes: {
+                hint: "P Button",
+                handler(ctx) {
+                    PodCube.log("P Button pressed");
+                }
+            },
+            no: {
+                hint: "C Button",
+                handler(ctx) {
+                    PodCube.log("C Button pressed");
+                }
             }
         });
-        PodCube.ContextManager.setContext(mainScreenContext);
     }
 
     onInit() {
@@ -60,6 +53,7 @@ export class SC_MAIN extends PodCubeScreen {
         // Register navigation contexts
         if (PodCube.ContextManager) {
             this.registerContexts();
+            PodCube.ContextManager.switch("Main Screen", this);
         } else {
             PodCube.log("ContextManager not found. Skipping context registration.");
         }
