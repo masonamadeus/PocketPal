@@ -4090,21 +4090,6 @@ if (reversed == null) { reversed = false; }
 
 	this.timeline.addTween(cjs.Tween.get(this.shape).wait(1));
 
-	// contexthints
-	this.contextHints = new cjs.Text("This is NOT a Touch-Compatible Screen", "23px 'Convection'", "#FFFFFF");
-	this.contextHints.name = "contextHints";
-	this.contextHints.textAlign = "center";
-	this.contextHints.lineHeight = 27;
-	this.contextHints.lineWidth = 787;
-	this.contextHints.parent = this;
-	this.contextHints.setTransform(446.05,857.85,0.9578,0.9578);
-
-	this.shape_1 = new cjs.Shape();
-	this.shape_1.graphics.f().s("#FFFFFF").ss(3,1,1).p("Eg9cAFvIAAopQAAi0C0AAMB1RAAAQC0AAAAC0IAAIp");
-	this.shape_1.setTransform(446.075,891.15);
-
-	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.shape_1},{t:this.contextHints}]}).wait(1));
-
 	// SCREENMANAGER
 	this.screenManager = new lib.SCREEN_MANAGER();
 	this.screenManager.name = "screenManager";
@@ -4120,15 +4105,15 @@ if (reversed == null) { reversed = false; }
 	this.timeline.addTween(cjs.Tween.get(this.backdrop).wait(1));
 
 	// SPACEHOLDER
-	this.shape_2 = new cjs.Shape();
-	this.shape_2.graphics.f("rgba(0,102,204,0)").s().p("EhGTBGUMAAAiMnMCMnAAAMAAACMng");
-	this.shape_2.setTransform(450,450);
+	this.shape_1 = new cjs.Shape();
+	this.shape_1.graphics.f("rgba(0,102,204,0)").s().p("EhGTBGUMAAAiMnMCMnAAAMAAACMng");
+	this.shape_1.setTransform(450,450);
 
-	this.timeline.addTween(cjs.Tween.get(this.shape_2).wait(1));
+	this.timeline.addTween(cjs.Tween.get(this.shape_1).wait(1));
 
 	this._renderFirstFrame();
 
-}).prototype = getMCSymbolPrototype(lib.REGION1, new cjs.Rectangle(0,0,1372.2,929.4), null);
+}).prototype = getMCSymbolPrototype(lib.REGION1, new cjs.Rectangle(0,0,1372.2,900.1), null);
 
 
 // stage content:
@@ -4176,7 +4161,7 @@ if (reversed == null) { reversed = false; }
 	this._renderFirstFrame();
 
 }).prototype = p = new lib.AnMovieClip();
-p.nominalBounds = new cjs.Rectangle(752.4,450,1070.8000000000002,479.4);
+p.nominalBounds = new cjs.Rectangle(752.4,450,1070.8000000000002,450.1);
 // library properties:
 lib.properties = {
 	id: 'F6615815F9884A46B3D7FC8DF2784958',
@@ -4184,7 +4169,7 @@ lib.properties = {
 	height: 900,
 	fps: 24,
 	color: "#F5F3EB",
-	opacity: 0.00,
+	opacity: 1.00,
 	manifest: [
 		{src:"sounds/FX_error2.mp3", id:"FX_error2"}
 	],
