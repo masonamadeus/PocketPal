@@ -287,7 +287,6 @@ if (reversed == null) { reversed = false; }
 			this.isSingleFrame = true;
 		}
 		this.playSound = function(id) { console.log(id) }
-		playSound("FX_error2");
 	}
 
 	// actions tween:
@@ -3372,9 +3371,7 @@ lib.properties = {
 		{src:"images/CachedBmp_12.png", id:"CachedBmp_12"},
 		{src:"images/PodCube2025_atlas_1.png", id:"PodCube2025_atlas_1"},
 		{src:"images/PodCube2025_atlas_2.png", id:"PodCube2025_atlas_2"},
-		{src:"images/PodCube2025_atlas_3.png", id:"PodCube2025_atlas_3"},
-		{src:"sounds/FX_error.mp3", id:"FX_error"},
-		{src:"sounds/FX_error2.mp3", id:"FX_error2"}
+		{src:"images/PodCube2025_atlas_3.png", id:"PodCube2025_atlas_3"}
 	],
 	preloads: []
 };
