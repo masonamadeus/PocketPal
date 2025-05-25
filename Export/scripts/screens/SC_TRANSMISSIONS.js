@@ -3,38 +3,35 @@ import { Context } from "../classes/PodCube_Context.js";
 
 export class SC_TRANSMISSIONS extends PodCubeScreen {
 
-    constructor(screenInstance) {
-        super(screenInstance);
+    constructor(symbol) {
+        super(symbol);
         // this.screenInstance = screenInstance; (from super)
         this.episodeSymbols = [];
         this.selectedIndex = 0;
         this.listView = null;
         this.scrollContainer = null;
-        this.contexts = [] // Store contexts here if needed
 
 
     }
 
     onShow() {
-        if (this.currentContext) {
-            PodCube.ContextManager.switch(this.currentContext, this);
-        }
+        console.log('onshow called for sc_transmissions')
     }
 
     onInit() {
 
         // ATTACH LISTVIEW CONTAINER
-        this.listView = this.screenInstance.LISTVIEW;
+        this.listView = this.symbol.LISTVIEW;
         if (!this.listView) {
             console.error("SC_TRANSMISSIONS: LISTVIEW instance not found.");
             return;
         }
 
         // Register navigation contexts
-        if (PodCube.ContextManager) {
-            this.registerContexts()
-            PodCube.log("SC_TRANSMISSIONS: Contexts registered.");
-        }
+
+        this.registerContexts()
+        PodCube.log("SC_TRANSMISSIONS: Contexts registered.");
+
 
         // Create scroll container and mask
         this.scrollContainer = new createjs.Container();
@@ -50,35 +47,34 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
     registerContexts() { // LIST VIEW
 
 
-        PodCube.ContextManager.define("Transmissions:List", {
+        this.defineContext("Transmissions:List", {
             up: {
                 hint: "Upward",
-                handler(ctx) {
-                   ctx.updateSelection((ctx.selectedIndex - 1 + ctx.episodeSymbols.length) % ctx.episodeSymbols.length);
-                }
+                handler: () => {this.updateSelection((this.selectedIndex - 1 + this.episodeSymbols.length) % this.episodeSymbols.length)}
+                
             },
             down: {
                 hint: "Down",
-                handler(ctx) {
-                    ctx.updateSelection((ctx.selectedIndex + 1) % ctx.episodeSymbols.length);
+                handler: () => {
+                    this.updateSelection((this.selectedIndex + 1) % this.episodeSymbols.length);
                 }
             },
             left: {
                 hint: "Back",
-                handler(ctx) {
+                handler: () => {
                     PodCube.log("SC_TRANSMISSIONS: Back pressed");
                 }
             },
             right: {
                 hint: "Details",
-                handler(ctx) {
-                    ctx.showDetails();
+                handler: () => {
+                    this.showDetails();
                 }
             },
             yes: {
                 hint: "Add to Queue",
-                handler(ctx) {
-                    const episode = ctx.selectedEpisode;
+                handler: ()=>{
+                    const episode = this.selectedEpisode;
                     if (episode) {
                         PodCube.log("SC_TRANSMISSIONS: Episode added to queue", episode);
                         PodCube.Player.addToQueue(episode)
@@ -89,46 +85,59 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
             },
             no: {
                 hint: "Scroll to Top",
-                handler(ctx) {
-                    ctx.scrollToTop();
-                }
-            }
-            
-        });
-
-        PodCube.ContextManager.define("Transmissions:Details", {
-            left: {
-                hint: "Back",
-                handler(ctx) {
-                    ctx.showList()
-                }
-            },
-            up: {
-                hint: "Error",
-                handler(ctx) {
-                    ctx.fuckyourmom();
+                handler: ()=>{
+                    this.scrollToTop();
                 }
             }
 
         });
 
-        this.currentContext = "Transmissions:List";
+
+
+        this.defineContext("Transmissions:Details", {
+          up: {
+            hint: "Error",
+            handler: () => {this.fuckyou()},
+          },
+          down: {
+            hint: "Down",
+            handler: () => {PodCube.log("Pressed Down in Transmissions:Details")},
+          },
+          left: {
+            hint: "Back",
+            handler: () => {this.showList()},
+          },
+          right: {
+            hint: "Right",
+            handler: () => {},
+          },
+          yes: {
+            hint: "P Button",
+            handler: () => {},
+          },
+          no: {
+            hint: "C Button",
+            handler: () => {},
+          },
+        });
+
+        this.switchContext("Transmissions:List");
 
     }
 
 
     showDetails() {
-        
+
         this.selectedItem.gotoAndStop("details");
-        PodCube.ContextManager.switch("Transmissions:Details", this);
+        this.switchContext("Transmissions:Details");
         this.scrollToTop(this.selectedItem);
         this.prevIndex = this.selectedIndex;
         this.scrollContainer.setChildIndex(this.selectedItem, this.scrollContainer.numChildren - 1);
     }
 
     showList() {
-        
-        PodCube.ContextManager.switch("Transmissions:List", this);
+
+        this.switchContext("Transmissions:List");
         if (this.prevIndex) {
             this.scrollContainer.setChildIndex(this.selectedItem, this.prevIndex);
         }
@@ -176,7 +185,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
     }
 
     get selectedItem() {
-        return this.episodeSymbols[this.selectedIndex] || null; 
+        return this.episodeSymbols[this.selectedIndex] || null;
     }
 
     updateSelection(newIndex) {
@@ -221,11 +230,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
         dataDiskSymbol.gotoAndPlay("disk-up");
         dataDiskSymbol.x = stage.canvas.width / 2;
         dataDiskSymbol.y = stage.canvas.height / 2;
-        PodCube.MSG.subscribe("Context-Changed", () => {
-            if (PodCube.ContextManager.getCurrentContext() !== "transmissions-details") {
-                dataDiskSymbol.goingDown = true;
-            }
-        });
+        // can't get rid of this
     }
 
 };

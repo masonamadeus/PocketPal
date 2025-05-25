@@ -41,7 +41,7 @@ export class MessageSystem {
         if (log) {
             console.log("MSG.publish: " + eventType.toString());
         }
-        
+
         if (!this._subscriptions[eventType]) {
             return;
         }
@@ -56,6 +56,24 @@ export class MessageSystem {
             k = "space";
         }
         this.publish("Keyboard-" + k, e);
+    }
+
+    createObservable(initialValue) {
+        let value = initialValue;
+        const subscribers = new Set();
+
+        return {
+            get: () => value,
+            set: (newValue) => {
+                value = newValue;
+                subscribers.forEach((fn) => fn(newValue));
+            },
+            subscribe: (fn) => {
+                subscribers.add(fn);
+                fn(value); // Optional: immediately call with current value
+                return () => subscribers.delete(fn); // unsubscribe
+            }
+        };
     }
 
     // Aliases as class methods

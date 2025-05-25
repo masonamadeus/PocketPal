@@ -120,7 +120,7 @@ class PodCube_Manager {
         this.MSG = new MessageSystem();           // 1. Message bus (needed by everything)
         this.Memory = new MemoryCartridge();      // 2. Persistent storage
         this.json = new PodCubeJSON();           // 3. Data providers
-        this.ContextManager = new ContextManager(); // 4. Input handling
+        //this.ContextManager = new ContextManager(); // 4. Input handling
         this.ScreenManager = new ScreenManager();   // 5. Screen management
         this.Player = new PodCubeAudioPlayer(); // 6. Audio playback
         this.Behavior = new BehaviorManager();      // 7. UI behaviors
@@ -151,7 +151,7 @@ class PodCube_Manager {
             }
         });
 
-        this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
+        //this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
 
         // Mark system as ready for operation
         this._isReady = true;
@@ -177,6 +177,11 @@ class PodCube_Manager {
         linkElement.href = fontUrl;
         document.head.appendChild(linkElement);
         console.log(`Font linked: ${fontUrl}`);
+    }
+
+    RESET() {
+        this.MemoryCartridge.format();
+        PodCube.MSG("Navigate-Screen", {linkageName:"SC_MAIN"});
     }
 
 

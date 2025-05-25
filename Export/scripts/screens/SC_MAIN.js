@@ -8,7 +8,7 @@ export class SC_MAIN extends PodCubeScreen {
 
 
     registerContexts() {
-        PodCube.ContextManager.define("Main Screen", {
+        this.defineContext("Main Screen", {
             up: {
                 hint: "Upward",
                 handler(ctx) {
@@ -51,12 +51,9 @@ export class SC_MAIN extends PodCubeScreen {
     onInit() {
 
         // Register navigation contexts
-        if (PodCube.ContextManager) {
-            this.registerContexts();
-            PodCube.ContextManager.switch("Main Screen", this);
-        } else {
-            PodCube.log("ContextManager not found. Skipping context registration.");
-        }
+         this.registerContexts();
+         this.switchContext("Main Screen");
+        
 
 
     }

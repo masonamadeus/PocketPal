@@ -4,8 +4,9 @@ export class PodCubeScreen {
             throw new Error('PodCubeScreen is an abstract class and cannot be instantiated directly');
         }
 
-        this.screenInstance = screenInstance;
-        this.currentContext = null;
+        this.symbol = screenInstance;
+        this.contexts = {};
+        
     }
 
     init() {
@@ -14,21 +15,40 @@ export class PodCubeScreen {
             return;
         }
         this.initialized = true;
+
+        this.currentContext = PodCube.MSG.createObservable(null);
         console.log('init called in parent screen class')
         this.onInit();
     }
 
     // Override these methods in your screen classes
-    onInit() {}
+    onInit() {
+
+    }
 
     onShow() {
-        if (this.currentContext) {
-            PodCube.ContextManager.setContext(this.currentContext);
-        }
-    }
-    
-    destroy() {
 
+    }
+
+    destroy() {
+    }
+
+    handleInput(action) {
+        const ctx = this.currentContext.get();
+        const handler = ctx[action].handler;
+        if (handler) handler.call(this);
+    }
+
+    defineContext(name, actions) {
+        this.contexts[name] = actions;
+    }
+
+    /*
+    * context[name].up
+    */
+
+    switchContext(name) {
+        this.currentContext.set(this.contexts[name]);
     }
 
     // Utility method to find a child by name in the screen instance
