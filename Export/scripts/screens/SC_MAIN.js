@@ -8,43 +8,34 @@ export class SC_MAIN extends PodCubeScreen {
 
 
     registerContexts() {
-        this.defineContext("Main Screen", {
-            up: {
-                hint: "Upward",
-                handler(ctx) {
-                    PodCube.log("Up pressed");
-                }
-            },
-            down: {
-                hint: "Down",
-                handler(ctx) {
-                    PodCube.log("Down pressed");
-                }
-            },
-            left: {
-                hint: "Left",
-                handler(ctx) {
-                    PodCube.log("Left pressed");
-                }
-            },
-            right: {
-                hint: "Right",
-                handler(ctx) {
-                    PodCube.log("Right pressed");
-                }
-            },
-            yes: {
-                hint: "P Button",
-                handler(ctx) {
-                    PodCube.log("P Button pressed");
-                }
-            },
-            no: {
-                hint: "C Button",
-                handler(ctx) {
-                    PodCube.log("C Button pressed");
-                }
-            }
+        this.defineContext("Main:Default", {
+          up: {
+            hint: "Upward",
+            handler: () => {PodCube.log("Empty Handler")},
+          },
+          down: {
+            hint: "Down",
+            handler: () => {PodCube.log("Empty Handler")},
+          },
+          left: {
+            hint: "Left",
+            handler: () => {PodCube.log("Empty Handler")},
+          },
+          right: {
+            hint: "Right",
+            handler: () => {PodCube.log("Empty Handler")},
+          },
+          yes: {
+            hint: "Slideshow",
+            handler: () => {PodCube.MSG.pub("Navigate-Screen", {
+                linkageName: "SC_IFRAME",
+                url: "https://docs.google.com/presentation/d/e/2PACX-1vTuI3XqVfEmZml6dlZaWHK5ISB0hpXXKGisTVFLc9QT5BHfdjV9_TUkHGQqb8ueP-9fsnbk4xiQvio1/pubembed?rm=minimal"
+            })},
+          },
+          no: {
+            hint: "C Button",
+            handler: () => {PodCube.log("Empty Handler")},
+          },
         });
     }
 
@@ -52,7 +43,7 @@ export class SC_MAIN extends PodCubeScreen {
 
         // Register navigation contexts
          this.registerContexts();
-         this.switchContext("Main Screen");
+         this.switchContext("Main:Default");
         
 
 

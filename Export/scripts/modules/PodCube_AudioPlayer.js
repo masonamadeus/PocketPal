@@ -106,6 +106,10 @@ export class PodCubeAudioPlayer {
         PodCube.MSG.publish("Queue-Updated", this.queue);
     }
 
+    playNext(episode) {
+        // insert episode to next position in queue;
+    }
+
     /**
      * Starts or resumes playback of an episode.
      * @param {number} [index] - Optional index of episode to play. If not provided,

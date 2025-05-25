@@ -68,20 +68,13 @@ class PodCube_Manager {
         // this._feed = this.Memory.load('feed'); // Try to load cached feed - MemoryCartridge handles TTL internally
 
         if (this._feed) {
-
             this.MSG.publish('Feed-Ready');
             this.log("PodCube_Manager: Using cached feed");
 
         } else {
 
-            // Only fetch if cache missing or expired
-            this.log("PodCube_Manager: Cache miss or expired, fetching fresh feed");
-            this.json.fetchFeed().then(feed => {
-                this._feed = feed;
-                this.Memory.save('feed', feed); // Uses MemoryCartridge's default 24h TTL
-                this.MSG.publish('Feed-Ready');
-                this.log("PodCube_Manager: Fetched and cached fresh feed");
-            });
+            this.log("PodCube_Manager: fetching fresh feed");
+            this.fetchFeed();
         }
 
         // Wait for Adobe Animate to initialize
@@ -94,35 +87,44 @@ class PodCube_Manager {
         return this._feed;
     }
 
-    handleError(message, source, lineno, colno, error){
-        PodCube.errorText = this.formatError(error || { message, source, lineno, colno });
-        this.ScreenManager.loadScreen("SC_BUSTED");
-
+    fetchFeed(){
+         this.log("PodCube_Manager: fetching fresh feed");
+            try {
+            this.json.fetchFeed().then(feed => {
+                this._feed = feed;
+                this.Memory.save('feed', feed); // Uses MemoryCartridge's default 24h TTL
+                this.MSG.publish('Feed-Ready');
+                this.log("PodCube_Manager: Fetched and cached fresh feed");
+            }); }
+            catch (e) { 
+                this.log("PodCube: Couldn't get JSON Feed");
+            }
     }
 
-    formatError(err) {
+    handleError(message, source, lineno, colno, error){
+        PodCube.errorText = this.formatErrorMsg(error || { message, source, lineno, colno });
+        this.ScreenManager.loadScreen("SC_BUSTED");
+    }
+
+    formatErrorMsg(err) {
         if (!err) return "Unknown error";
-
         let msg = `Error: ${err.message || err.toString()}`;
-
         if (err.stack) {
             msg += `\nStack:\n${err.stack}`;
         } else if (err.lineno !== undefined && err.colno !== undefined && err.source) {
             msg += `\nAt ${err.source}:${err.lineno}:${err.colno}`;
         }
-
         return msg;
     }
 
     // Initialize core subsystems in dependency order:
     initializePodCubeModules() {
-        this.MSG = new MessageSystem();           // 1. Message bus (needed by everything)
-        this.Memory = new MemoryCartridge();      // 2. Persistent storage
-        this.json = new PodCubeJSON();           // 3. Data providers
-        //this.ContextManager = new ContextManager(); // 4. Input handling
-        this.ScreenManager = new ScreenManager();   // 5. Screen management
-        this.Player = new PodCubeAudioPlayer(); // 6. Audio playback
-        this.Behavior = new BehaviorManager();      // 7. UI behaviors
+        this.MSG = new MessageSystem();             // Message bus (needed by everything)
+        this.Memory = new MemoryCartridge();        // Persistent storage
+        this.json = new PodCubeJSON();              // Data provider
+        this.ScreenManager = new ScreenManager();   // Screen management
+        this.Player = new PodCubeAudioPlayer();     // Audio playback
+        this.Behavior = new BehaviorManager();      // UI behaviors
     }
 
     // Attach all object classes to this instance using the barrel file import
@@ -150,7 +152,9 @@ class PodCube_Manager {
             }
         });
 
-        //this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
+        this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
+
+        this._backdrop = exportRoot.region_1.backdrop // HARDCODED NAME HERE BUDDY
 
         // Mark system as ready for operation
         this._isReady = true;
@@ -181,6 +185,14 @@ class PodCube_Manager {
     RESET() {
         this.MemoryCartridge.format();
         PodCube.MSG("Navigate-Screen", {linkageName:"SC_MAIN"});
+    }
+
+    hideBackdrop() {
+        this._backdrop.visible = false;
+    }
+
+    showBackdrop(){
+        this._backdrop.visible = true;
     }
 
 

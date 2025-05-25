@@ -3,14 +3,18 @@ export class SC_BUSTED extends PodCubeScreen {
     constructor(symbol) {
         super(symbol)
         symbol.errorText.text = PodCube.errorText;
+
+    }
+
+    onInit() {
         this.defineContext("SC_BUSTED", {
-            up: "oops", handler(ctx){PodCube.RESET();},
-            down: "uh-oh", handler(ctx){PodCube.RESET();},
-            left: "whoops", handler(ctx){PodCube.RESET();},
-            right: "yikes", handler(ctx){PodCube.RESET();}
+            up: "oops", handler: () => { PodCube.RESET(); },
+            down: "uh-oh", handler: () => { PodCube.RESET(); },
+            left: "whoops", handler: () => { PodCube.RESET(); },
+            right: "yikes", handler: () => { PodCube.RESET(); }
 
         })
         this.switchContext("SC_BUSTED");
+    };
 
-    }
 }

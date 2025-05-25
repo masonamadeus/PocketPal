@@ -19,4 +19,10 @@ body::before {
         inset 0 0 15px 5px rgba(0,0,0,1);
     pointer-events: none;
     z-index: 9999;
+    
+}
+
+body {
+    
+    background-color:rgba(245, 243, 235, 1.00);
 }

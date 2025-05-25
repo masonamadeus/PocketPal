@@ -3,7 +3,6 @@ export class PodCubeScreen {
         if (this.constructor === PodCube.PodCubeScreen) {
             throw new Error('PodCubeScreen is an abstract class and cannot be instantiated directly');
         }
-
         this.symbol = screenInstance;
         this.contexts = {};
         
@@ -17,12 +16,40 @@ export class PodCubeScreen {
         this.initialized = true;
 
         this.currentContext = PodCube.MSG.createObservable(null);
-        console.log('init called in parent screen class')
+
+        this.defineContext("fallback", {
+          up: {
+            hint: "Upward",
+            handler: () => {PodCube.log("Screen in fallback context")},
+          },
+          down: {
+            hint: "Down",
+            handler: () => {PodCube.log("Screen in fallback context")},
+          },
+          left: {
+            hint: "Left",
+            handler: () => {PodCube.log("Screen in fallback context")},
+          },
+          right: {
+            hint: "Right",
+            handler: () => {PodCube.log("Screen in fallback context")},
+          },
+          yes: {
+            hint: "P Button",
+            handler: () => {PodCube.log("Screen in fallback context")},
+          },
+          no: {
+            hint: "C Button",
+            handler: () => {PodCube.log("Screen in fallback context")},
+          },
+        });
+        this.switchContext("fallback")
         this.onInit();
     }
 
     // Override these methods in your screen classes
     onInit() {
+        PodCube.log(`Class ${this.screenInstance.name} does not override base Screen onInit()`)
 
     }
 
@@ -43,10 +70,6 @@ export class PodCubeScreen {
         this.contexts[name] = actions;
     }
 
-    /*
-    * context[name].up
-    */
-
     switchContext(name) {
         this.currentContext.set(this.contexts[name]);
     }
@@ -55,4 +78,6 @@ export class PodCubeScreen {
     getChild(name) {
         return this.screenInstance[name] || null;
     }
+
+
 };

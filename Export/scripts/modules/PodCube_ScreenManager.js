@@ -19,13 +19,13 @@ export class ScreenManager {
 
         // Core screen management properties
         this.currentScreen = null;  // Reference to currently displayed screen
-        this._scManager = null;            // CreateJS container for screens
+        this.screenManager = null;            // CreateJS container for screens
         this.screenHistory = {};           // Track screen history
         this.needsInitialization = true;   // Flag for lazy initialization
 
         //subscribe to 'navigate-screen' event
         PodCube.MSG.subscribe("Navigate-Screen", (event) => {
-            this.loadScreen(event.linkageName, event.extraData);
+            this.loadScreen(event.linkageName, event.url);
         })
 
         this.actions = ['up', 'down', 'left', 'right', 'yes', 'no'];
@@ -70,7 +70,7 @@ export class ScreenManager {
             return;
         }
 
-        this._scManager = exportRoot.region_1.screenManager;
+        this.screenManager = exportRoot.region_1.screenManager;
         this.needsInitialization = false;
 
         // Publish initialization complete event
@@ -93,20 +93,32 @@ export class ScreenManager {
    * @returns {CreateJS.MovieClip|null} The created screen instance or null if creation fails
    */
 
-    createScreen(linkageName) {
-
+    createScreen(linkageName, url) {
+        let screenSymbol, controllerClass, controllerInstance
         // First, verify the symbol exists in the Adobe Animate library
-        if (!PodCube.lib?.[linkageName]) {
+        if (linkageName === "SC_IFRAME") {
+
+            PodCube.log("Making SC_IFRAME for URL: "+url)
+
+            // make new 'symbol' for this. need to adjust transform to match screenmanager
+            screenSymbol = new createjs.Container();
+            screenSymbol.url = url;
+
+            
+        } else if (!PodCube.lib?.[linkageName]) {
+            
             console.error(`ScreenManager: Screen symbol '${linkageName}' not found in library.`);
-            return null;
+            
+        } else {
+            // Create the CreateJS/Animate MovieClip instance
+            screenSymbol = new PodCube.lib[linkageName]();
         }
 
-        // Create the CreateJS/Animate MovieClip instance
-        const screenSymbol = new PodCube.lib[linkageName]();
+
         // Create an instance of the controller
-        const controllerClass = ScreenList[linkageName];
-        const controllerInstance = new controllerClass(screenSymbol);
-        
+        controllerClass = ScreenList[linkageName];
+        controllerInstance = new controllerClass(screenSymbol);
+
         screenSymbol.linkageName = linkageName;
         controllerInstance.linkageName = linkageName;
 
@@ -129,10 +141,10 @@ export class ScreenManager {
      * 
      * @param {string} linkageName - The Adobe Animate linkage name of the screen to load
      */
-    loadScreen(linkageName) {
+    loadScreen(linkageName, url ="") {
 
         // Verify we have our stage container
-        if (!this._scManager) {
+        if (!this.screenManager) {
             console.error("ScreenManager: _scManager is not initialized.");
             return;
         }
@@ -146,7 +158,7 @@ export class ScreenManager {
         // Unload current screen
         this.unloadCurrentScreen();
 
-        let screen = this.createScreen(linkageName);
+        let screen = this.createScreen(linkageName, url);
         // Exit if screen creation failed
         if (!screen) {
             console.error(`ScreenManager: Failed to create screen ${linkageName}`);
@@ -158,7 +170,7 @@ export class ScreenManager {
         this.currentScreen = screen;
 
         // Add to the CreateJS display list
-        this._scManager.addChild(screen.symbol);
+        this.screenManager.addChild(screen.symbol);
 
         // Call the screen's onShow method if it exists
         this.currentScreen.onShow();
@@ -216,15 +228,11 @@ export class ScreenManager {
                 });
             }
 
-            // Remove all event listeners
-            if (typeof this.currentScreen.removeAllEventListeners === "function") {
-                this.currentScreen.removeAllEventListeners();
-            }
-
             // Remove from visual hierarchy and clear reference
-            if (this._scManager?.contains(this.currentScreen)) {
-                this._scManager.removeChild(this.currentScreen);
-            }
+
+                this.screenManager.removeChild(this.currentScreen.symbol);
+                this.currentScreen.symbol.removeAllEventListeners();
+
 
             // Clear strong references that might prevent garbage collection
             if (this.currentScreen.controller) {
@@ -237,7 +245,7 @@ export class ScreenManager {
             console.error("ScreenManager: Error during screen cleanup:", error);
             // Even if cleanup fails, still remove from display list
             try {
-                this._scManager?.removeChild(this.currentScreen);
+                this.screenManager?.removeChild(this.currentScreen);
                 this.currentScreen = null;
             } catch (e) {
                 console.error("ScreenManager: Critical error during cleanup:", e);

@@ -111,12 +111,12 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
             handler: () => {},
           },
           yes: {
-            hint: "P Button",
-            handler: () => {},
+            hint: "Add to Queue",
+            handler: () => {PodCube.Player.addToQueue(this.selectedEpisode)},
           },
           no: {
-            hint: "C Button",
-            handler: () => {},
+            hint: "Play Next",
+            handler: () => { PodCube.Player.playNext(this.selectedEpisode)},
           },
         });
 
@@ -130,7 +130,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
         this.selectedItem.gotoAndStop("details");
         this.switchContext("Transmissions:Details");
         this.scrollToTop(this.selectedItem);
-        this.prevIndex = this.selectedIndex;
+        this.prevIndex = this.scrollContainer.getChildIndex(this.selectedItem)
         this.scrollContainer.setChildIndex(this.selectedItem, this.scrollContainer.numChildren - 1);
     }
 
