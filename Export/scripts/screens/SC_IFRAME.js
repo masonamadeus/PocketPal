@@ -124,10 +124,10 @@ export class SC_IFRAME extends PodCubeScreen {
 
     defineContexts() {
         this.defineContext("Iframe:Controls", {
-            up: { hint: "Upward", handler: () => this.prevSlide() },
-            down: { hint: "Down", handler: () => this.nextSlide() },
-            left: { hint: "Left", handler: () => this.prevSlide() },
-            right: { hint: "Right", handler: () => this.nextSlide() },
+            up: { hint: "Previous", handler: () => this.prevSlide() },
+            down: { hint: "Next", handler: () => this.nextSlide() },
+            left: { hint: "Previous", handler: () => this.prevSlide() },
+            right: { hint: "Next", handler: () => this.nextSlide() },
             yes: {
                 hint: "Main Menu", handler: () => PodCube.MSG.pub("Navigate-Screen",
                     {
