@@ -27,7 +27,7 @@ import * as PodCubeClasses from './classes/ClassList.js'; // Import all PodCube 
 
 class PodCube_Manager {
 
-    get symbolPaths(){
+    get symbolPath(){
         // get the various hardcoded symbol paths we need
         return {
             audioPlayer: exportRoot.region_2.Player,
@@ -168,12 +168,12 @@ class PodCube_Manager {
 
        
 
-        this.Player = new PodCubeAudioPlayer(this.symbolPaths["audioPlayer"].screen);     // Audio playback
+        this.Player = new PodCubeAudioPlayer(this.symbolPath["audioPlayer"].screen);     // Audio playback
 
         // Mark system as ready for operation
         this._isReady = true;
 
-         this.MSG.publish('Navigate-Screen', { linkageName: 'SC_TRANSMISSIONS' }); // Start at main screen
+         this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
     }
 
     loadFonts() {
@@ -204,11 +204,11 @@ class PodCube_Manager {
     }
 
     hideBackdrop() {
-        this.symbolPaths["backdrop"].visible = false;
+        this.symbolPath["backdrop"].visible = false;
     }
 
     showBackdrop(){
-        this.symbolPaths["backdrop"].visible = true;
+        this.symbolPath["backdrop"].visible = true;
     }
 
 
