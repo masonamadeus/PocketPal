@@ -85,6 +85,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
             no: {
                 hint: "Scroll to Top",
                 handler: ()=>{
+                    this.updateSelection(0);
                     this.scrollToTop();
                 }
             }
@@ -116,7 +117,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
           },
           no: {
             hint: "Play Next",
-            handler: () => { PodCube.Player.playNext(this.selectedEpisode)},
+            handler: () => { PodCube.Player.addNextToQueue(this.selectedEpisode)},
           },
         });
 
@@ -125,25 +126,28 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
     }
 
 
-    showDetails() {
+   showDetails() {
+    // Switch context first
+    this.switchContext("Transmissions:Details");
+    
+    // Then handle visual updates
+    this.selectedItem.gotoAndStop("details");
+    this.scrollToTop(this.selectedItem);
+    //this.prevIndex = this.scrollContainer.getChildIndex(this.selectedItem);
+    this.scrollContainer.setChildIndex(this.selectedItem, this.scrollContainer.numChildren - 1);
+}
 
-        this.selectedItem.gotoAndStop("details");
-        this.switchContext("Transmissions:Details");
-        this.scrollToTop(this.selectedItem);
-        this.prevIndex = this.scrollContainer.getChildIndex(this.selectedItem)
-        this.scrollContainer.setChildIndex(this.selectedItem, this.scrollContainer.numChildren - 1);
+showList() {
+    // Switch context first
+    this.switchContext("Transmissions:List");
+    
+    // Then handle visual updates
+    if (this.prevIndex) {
+        this.scrollContainer.setChildIndex(this.selectedItem, this.prevIndex);
     }
-
-    showList() {
-
-        this.switchContext("Transmissions:List");
-        if (this.prevIndex) {
-            this.scrollContainer.setChildIndex(this.selectedItem, this.prevIndex);
-        }
-        this.selectedItem.gotoAndStop("list-selected");
-        this.scrollSelectionToCenter();
-    }
-
+    this.selectedItem.gotoAndStop("list-selected");
+    this.scrollSelectionToCenter();
+}
 
     populateEpisodes() {
         // Clear previous symbols if any
@@ -202,7 +206,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
         const targetY = selectedSymbol.y;
         createjs.Tween.get(this.scrollContainer)
             .to({ y: -targetY }, 300, createjs.Ease.quadOut);
-        this.updateSelection(0); // Reset selection to the first item
+        //this.updateSelection(0); // Reset selection to the first item
     }
 
     scrollSelectionToCenter() {

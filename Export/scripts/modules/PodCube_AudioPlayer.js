@@ -86,6 +86,20 @@ export class PodCubeAudioPlayer {
         this.updateDisplay();
     }
 
+    addNextToQueue(episode) {
+        if (this.currentIndex === -1) {
+            // If nothing is playing, add to the end of the queue
+            this.addToQueue(episode);
+        } else {
+            // Insert at the next position in the queue
+            this.queue.splice(this.currentIndex + 1, 0, episode);
+            PodCube.MSG.publish("Queue-Updated", this.queue);
+            console.log("PodCubeAudioPlayer: Added next to queue:", episode.title);
+        }
+
+        this.updateDisplay();
+    }
+
     /**
      * Removes an episode from the queue at the specified index.
      * If the removed episode was playing, plays the next episode.
@@ -301,12 +315,10 @@ export class PodCubeAudioPlayer {
         }
     }
 
-    /**
-     * Handles timeupdate events and publishes Playback-Progress message.
-     * The progress percentage is appended to the event name.
-     * @private
-     */
-   onTimeUpdate() {
+ 
+
+// Modify onTimeUpdate() method
+onTimeUpdate() {
     const state = this.getPlaybackState();
     const percent = (state.duration && Number.isFinite(state.duration))
         ? (state.currentTime / state.duration) * 100
@@ -314,21 +326,37 @@ export class PodCubeAudioPlayer {
 
     // Update progress bar position
     if (this.symbol.progressBar?.bar) {
-        // Get the total width of the progress bar container
         const totalWidth = this.symbol.progressBar.nominalBounds.width;
-        // Move the bar along the x axis based on percentage
         this.symbol.progressBar.bar.x = (percent / 100) * totalWidth;
     }
 
-    // Calculate time remaining
-    const timeRemaining = state.duration - state.currentTime;
-    if (timeRemaining > 0) {
-        this.symbol.currentTime.text = this.formatTime(timeRemaining);
+    // Calculate total queue duration
+    const totalDuration = this.getTotalQueueDuration();
+    const currentEpisode = this.getCurrentEpisode();
+    
+    if (currentEpisode && state.duration) {
+        // Calculate elapsed time of previous episodes
+        const elapsedPreviousEpisodes = this.queue
+            .slice(0, this.currentIndex)
+            .reduce((total, episode) => total + (episode.rawDuration || 0), 0);
+            
+        // Add current episode's elapsed time
+        const totalElapsed = elapsedPreviousEpisodes + state.currentTime;
+        
+        // Show remaining time from total queue
+        const remainingTime = totalDuration - totalElapsed;
+        this.symbol.currentTime.text = this.formatTime(remainingTime);
     } else {
-        this.symbol.currentTime.text = this.formatTime(this.getCurrentEpisode()?.rawDuration);
+        // When not playing, show total queue duration
+        this.symbol.currentTime.text = this.formatTime(totalDuration);
     }
 
-    PodCube.MSG.publish("Playback-Progress" + percent.toString(), state);
+}
+
+ getTotalQueueDuration() {
+    return this.queue.reduce((total, episode) => {
+        return total + (episode.rawDuration || 0);
+    }, 0);
 }
 
     // Helper method to handle negative times properly
