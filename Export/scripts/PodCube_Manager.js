@@ -165,12 +165,14 @@ class PodCube_Manager {
         // ANIMATE IS READY NOW. ALL THE FOLLOWING ACTIONS ARE SAFE TO EXECUTE \\
         // =================================================================== \\
 
-        this.MSG.publish('Navigate-Screen', { linkageName: 'SC_TRANSMISSIONS' }); // Start at main screen
+       
 
         this.Player = new PodCubeAudioPlayer(this.symbolPaths["audioPlayer"].screen);     // Audio playback
 
         // Mark system as ready for operation
         this._isReady = true;
+
+         this.MSG.publish('Navigate-Screen', { linkageName: 'SC_TRANSMISSIONS' }); // Start at main screen
     }
 
     loadFonts() {
