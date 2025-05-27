@@ -161,7 +161,11 @@ class PodCube_Manager {
             }
         });
 
-        this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
+        // =================================================================== \\
+        // ANIMATE IS READY NOW. ALL THE FOLLOWING ACTIONS ARE SAFE TO EXECUTE \\
+        // =================================================================== \\
+
+        this.MSG.publish('Navigate-Screen', { linkageName: 'SC_TRANSMISSIONS' }); // Start at main screen
 
         this.Player = new PodCubeAudioPlayer(this.symbolPaths["audioPlayer"].screen);     // Audio playback
 
