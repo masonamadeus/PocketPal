@@ -26,6 +26,14 @@ import { PodCubeRSS } from './modules/PodCube_RSS.js';
 import * as PodCubeClasses from './classes/ClassList.js'; // Import all PodCube object classes
 
 class PodCube_Manager {
+
+    get symbolPaths(){
+        // get the various hardcoded symbol paths we need
+        return {
+            audioPlayer: exportRoot.region_2.Player,
+
+        }
+    }
     constructor() {
         this.Class = {}   // Object classes will be attached here
         
@@ -46,7 +54,8 @@ class PodCube_Manager {
         'Linear Beam',
         'Nova Square',
         'Sixtyfour:BLED,SCAN@13,-7',
-        'Jersey 25 Charted'
+        'Jersey 25 Charted',
+        'VT323',
         ];
         this.loadFonts(); // Load fonts from Google Fonts
         
@@ -123,7 +132,7 @@ class PodCube_Manager {
         this.Memory = new MemoryCartridge();        // Persistent storage
         this.json = new PodCubeJSON();              // Data provider
         this.ScreenManager = new ScreenManager();   // Screen management
-        this.Player = new PodCubeAudioPlayer();     // Audio playback
+       
         this.Behavior = new BehaviorManager();      // UI behaviors
     }
 
@@ -154,7 +163,7 @@ class PodCube_Manager {
 
         this.MSG.publish('Navigate-Screen', { linkageName: 'SC_MAIN' }); // Start at main screen
 
-        this._backdrop = exportRoot.region_1.backdrop // HARDCODED NAME HERE BUDDY
+        this.Player = new PodCubeAudioPlayer(this.symbolPaths["audioPlayer"].screen);     // Audio playback
 
         // Mark system as ready for operation
         this._isReady = true;

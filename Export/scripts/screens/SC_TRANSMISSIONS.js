@@ -202,6 +202,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
         const targetY = selectedSymbol.y;
         createjs.Tween.get(this.scrollContainer)
             .to({ y: -targetY }, 300, createjs.Ease.quadOut);
+        this.updateSelection(0); // Reset selection to the first item
     }
 
     scrollSelectionToCenter() {

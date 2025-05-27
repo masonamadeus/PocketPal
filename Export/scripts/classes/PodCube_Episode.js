@@ -95,7 +95,7 @@ export class Episode {
         
         // Audio Properties
         this.audioUrl = data.audioUrl || null;
-        this._duration = data.duration || 0;
+        this.rawDuration = data.duration || 0;
         this.size = data.size || 0;
     }
 
@@ -145,8 +145,8 @@ export class Episode {
     }
 
     get duration() {
-        const minutes = Math.floor(this._duration / 60);
-        const fractions = (this._duration % 60) / 60;
+        const minutes = Math.floor(this.rawDuration / 60);
+        const fractions = (this.rawDuration % 60) / 60;
         const weirdMinutes = (minutes + fractions).toFixed(2);
 
         // 1% chance to append something weird
@@ -157,6 +157,12 @@ export class Episode {
 
         return `${weirdMinutes}${suffix}`;
 
+    }
+
+    get minutesSeconds() {
+        const minutes = Math.floor(this.rawDuration / 60);
+        const secs = Math.floor(this.rawDuration % 60);
+        return `${minutes < 10 ? '0': ''}${minutes}:${secs < 10 ? '0' : ''}${secs}`;
     }
 
     /**
