@@ -39,6 +39,11 @@ class PodCube_Manager {
         this.Class = {}   // Object classes will be attached here
         
         window.onerror = (message, source, lineno, colno, error) => this.handleError(message, source, lineno, colno, error);
+        document.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+        });
+
+        
         
         window.playSound = function (id) {
             return createjs.Sound.play(id);

@@ -8,6 +8,11 @@ export class PodCubeScreen {
         
     }
 
+    get context() {
+        return {name: this.currentContextName, data: this.currentContext.get()}
+    }
+
+
     init() {
         if (this.initialized) {
             console.warn(`${this.constructor.name}: Already initialized. Skipping re-initialization.`);
@@ -67,11 +72,12 @@ export class PodCubeScreen {
     }
 
     defineContext(name, actions) {
-        this.contexts[name] = actions;
+      this.contexts[name] = actions;
     }
 
     switchContext(name) {
         this.currentContext.set(this.contexts[name]);
+        this.currentContextName = name;
     }
 
     // Utility method to find a child by name in the screen instance

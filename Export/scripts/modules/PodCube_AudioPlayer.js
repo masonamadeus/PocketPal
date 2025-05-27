@@ -22,7 +22,10 @@ export class PodCubeAudioPlayer {
         this.currentIndex = -1;
         this.skipForwardTime = PodCube.Memory.load("skipForwardTime") || 20; // Default skip forward time in seconds
         this.skipBackwardTime = PodCube.Memory.load("skipBackwardTime") || 7; // Default skip backward time in seconds
-        this.symbol = symbolInstance;
+        this.screen = symbolInstance;
+
+        this._singleLineTitleHeight = 27;
+        this._titleCentered = false;
 
 
         // Set up event listeners
@@ -40,6 +43,54 @@ export class PodCubeAudioPlayer {
         });
 
         this.updateDisplay();
+    }
+
+    
+    /**
+     * Sets the audio playback volume.
+     * @param {number} volume - Volume level between 0 and 1
+     */
+    set volume(volume) {
+        this.audio.volume = Math.max(0, Math.min(1, volume));
+    }
+
+    /**
+     * Gets the current audio volume.
+     * @returns {number} Current volume level between 0 and 1
+     */
+    get volume() {
+        return this.audio.volume;
+    }
+
+    /**
+     * Gets the currently playing episode.
+     * @returns {Object|null} The current episode object or null if queue is empty
+     */
+    get currentEpisode() {
+        return this.currentIndex >= 0 ? this.queue[this.currentIndex] : null;
+    }
+
+    /**
+     * Gets the current playback state.
+     * @returns {Object} Playback state object
+     * @property {boolean} isPlaying - Whether audio is currently playing
+     * @property {number} currentTime - Current playback position in seconds
+     * @property {number} duration - Total duration of current episode in seconds
+     * @property {number} volume - Current volume level between 0 and 1
+     */
+    get playbackState() {
+        return {
+            isPlaying: !this.audio.paused,
+            currentTime: this.audio.currentTime,
+            duration: this.audio.duration || 0,
+            volume: this.audio.volume
+        };
+    }
+
+    get totalQueueDuration() {
+        return this.queue.reduce((total, episode) => {
+            return total + (episode.rawDuration || 0);
+        }, 0);
     }
 
     handleShortcut(shortcut) {
@@ -64,6 +115,8 @@ export class PodCubeAudioPlayer {
                 console.warn("PodCubeAudioPlayer: Unknown shortcut", shortcut);
         }
     }
+
+
     /**
      * Adds an episode to the playback queue.
      * If this is the first episode, it will start playing automatically.
@@ -130,9 +183,6 @@ export class PodCubeAudioPlayer {
         PodCube.MSG.publish("Queue-Updated", this.queue);
     }
 
-    playNext(episode) {
-        // insert episode to next position in queue;
-    }
 
     /**
      * Starts or resumes playback of an episode.
@@ -201,6 +251,7 @@ export class PodCubeAudioPlayer {
             console.log("PodCubeAudioPlayer: End of queue");
             PodCube.MSG.publish("Queue-Ended");
         }
+        this.updateDisplay();
     }
 
     /**
@@ -216,6 +267,7 @@ export class PodCubeAudioPlayer {
             this.currentIndex--;
             this.play();
         }
+        this.updateDisplay();
     }
 
     /**
@@ -227,6 +279,7 @@ export class PodCubeAudioPlayer {
         if (Number.isFinite(duration)) {
             this.audio.currentTime = Math.min(this.audio.currentTime + this.skipForwardTime, duration);
         }
+        this.updateDisplay();
     }
 
     /**
@@ -238,6 +291,7 @@ export class PodCubeAudioPlayer {
         if (Number.isFinite(currentTime)) {
             this.audio.currentTime = Math.max(currentTime - this.skipBackwardTime, 0);
         }
+        this.updateDisplay();
     }
 
 
@@ -250,57 +304,19 @@ export class PodCubeAudioPlayer {
         if (Number.isFinite(duration) && time >= 0 && time <= duration) {
             this.audio.currentTime = time;
         }
+        this.updateDisplay();
     }
 
-    /**
-     * Sets the audio playback volume.
-     * @param {number} volume - Volume level between 0 and 1
-     */
-    setVolume(volume) {
-        this.audio.volume = Math.max(0, Math.min(1, volume));
-    }
-
-    /**
-     * Gets the current audio volume.
-     * @returns {number} Current volume level between 0 and 1
-     */
-    getVolume() {
-        return this.audio.volume;
-    }
-
-    /**
-     * Gets the currently playing episode.
-     * @returns {Object|null} The current episode object or null if queue is empty
-     */
-    getCurrentEpisode() {
-        return this.currentIndex >= 0 ? this.queue[this.currentIndex] : null;
-    }
-
-    /**
-     * Gets the current playback state.
-     * @returns {Object} Playback state object
-     * @property {boolean} isPlaying - Whether audio is currently playing
-     * @property {number} currentTime - Current playback position in seconds
-     * @property {number} duration - Total duration of current episode in seconds
-     * @property {number} volume - Current volume level between 0 and 1
-     */
-    getPlaybackState() {
-        return {
-            isPlaying: !this.audio.paused,
-            currentTime: this.audio.currentTime,
-            duration: this.audio.duration || 0,
-            volume: this.audio.volume
-        };
-    }
 
     /**
      * Handles play events and publishes Episode-Playing message.
      * @private
      */
     onPlay() {
-        const episode = this.getCurrentEpisode();
+        const episode = this.currentEpisode;
         if (episode) {
             PodCube.MSG.publish("Episode-Playing", episode);
+            this.updateDisplay();
         }
     }
 
@@ -309,62 +325,23 @@ export class PodCubeAudioPlayer {
      * @private
      */
     onPause() {
-        const episode = this.getCurrentEpisode();
+        const episode = this.currentEpisode;
         if (episode) {
             PodCube.MSG.publish("Episode-Paused", episode);
+            this.updateDisplay();
         }
     }
 
- 
 
-// Modify onTimeUpdate() method
-onTimeUpdate() {
-    const state = this.getPlaybackState();
-    const percent = (state.duration && Number.isFinite(state.duration))
-        ? (state.currentTime / state.duration) * 100
-        : 0;
 
-    // Update progress bar position
-    if (this.symbol.progressBar?.bar) {
-        const totalWidth = this.symbol.progressBar.nominalBounds.width;
-        this.symbol.progressBar.bar.x = (percent / 100) * totalWidth;
-    }
-
-    // Calculate total queue duration
-    const totalDuration = this.getTotalQueueDuration();
-    const currentEpisode = this.getCurrentEpisode();
+  
     
-    if (currentEpisode && state.duration) {
-        // Calculate elapsed time of previous episodes
-        const elapsedPreviousEpisodes = this.queue
-            .slice(0, this.currentIndex)
-            .reduce((total, episode) => total + (episode.rawDuration || 0), 0);
-            
-        // Add current episode's elapsed time
-        const totalElapsed = elapsedPreviousEpisodes + state.currentTime;
-        
-        // Show remaining time from total queue
-        const remainingTime = totalDuration - totalElapsed;
-        this.symbol.currentTime.text = this.formatTime(remainingTime);
-    } else {
-        // When not playing, show total queue duration
-        this.symbol.currentTime.text = this.formatTime(totalDuration);
-    }
-
-}
-
- getTotalQueueDuration() {
-    return this.queue.reduce((total, episode) => {
-        return total + (episode.rawDuration || 0);
-    }, 0);
-}
-
     // Helper method to handle negative times properly
     formatTime(seconds) {
         if (!Number.isFinite(seconds) || seconds < 0) return "--\n--";
         const minutes = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
-        return `${minutes < 10 ? '0': ''}${minutes}\n${secs < 10 ? '0' : ''}${secs}`;
+        return `${minutes < 10 ? '0' : ''}${minutes}\n${secs < 10 ? '0' : ''}${secs}`;
     }
 
     /**
@@ -375,7 +352,7 @@ onTimeUpdate() {
     onError(error) {
         console.error("PodCubeAudioPlayer: Error:", error);
         PodCube.MSG.publish("Playback-Error", {
-            episode: this.getCurrentEpisode(),
+            episode: this.currentEpisode,
             error: error
         });
     }
@@ -395,17 +372,32 @@ onTimeUpdate() {
 
     updateDisplay() {
         // Update current episode display
-        const currentEpisode = this.getCurrentEpisode();
-        if (this.symbol.currentEpisode) {
-            this.symbol.currentEpisode.text = currentEpisode ?
+        const currentEpisode = this.currentEpisode;
+        const prevHeight = this.screen.currentTitle.getBounds().height;
+        this.screen.currentTitle.text = currentEpisode ?
                 (currentEpisode.title || "ERROR READING TITLE") :
-                "No Episode Playing";
-            this.symbol.currentEpisode.visible = true;
+                "No Episode Selected...";
+        
+
+        const newHeight = this.screen.currentTitle.getBounds().height;
+
+        if (newHeight !== prevHeight) {
+            if (newHeight > this._singleLineTitleHeight && this._titleCentered === true ){
+                this.screen.currentTitle.y -= (this._singleLineTitleHeight/2)
+                this._titleCentered = false
+            }
+            if (newHeight <= this._singleLineTitleHeight && this._titleCentered === false){
+                this.screen.currentTitle.y += (this._singleLineTitleHeight/2)
+                this._titleCentered = true
+            }
+
         }
+    
+
 
         // Update queue slots (show next 3 episodes after current)
         for (let i = 0; i < 3; i++) {
-            const queueSlot = this.symbol[`queuedEpisode${i + 1}`];
+            const queueSlot = this.screen[`queuedEpisode${i + 1}`];
             const nextIndex = this.currentIndex + i + 1;
 
             if (queueSlot) {
@@ -423,5 +415,44 @@ onTimeUpdate() {
 
         this.onTimeUpdate();
     }
+
+      // Modify onTimeUpdate() method
+    onTimeUpdate() {
+        const state = this.playbackState;
+        const percent = (state.duration && Number.isFinite(state.duration))
+            ? (state.currentTime / state.duration) * 100
+            : 0;
+
+        // Update progress bar position
+        if (this.screen.progressBar?.bar) {
+            const totalWidth = this.screen.progressBar.nominalBounds.width;
+            this.screen.progressBar.bar.x = (percent / 100) * totalWidth;
+        }
+
+        // Calculate total queue duration
+        const totalDuration = this.totalQueueDuration;
+        const currentEpisode = this.currentEpisode;
+
+        if (currentEpisode && state.duration) {
+            // Calculate elapsed time of previous episodes
+            const elapsedPreviousEpisodes = this.queue
+                .slice(0, this.currentIndex)
+                .reduce((total, episode) => total + (episode.rawDuration || 0), 0);
+
+            // Add current episode's elapsed time
+            const totalElapsed = elapsedPreviousEpisodes + state.currentTime;
+
+            // Show remaining time from total queue
+            const remainingTime = totalDuration - totalElapsed;
+            this.screen.currentTime.text = this.formatTime(remainingTime);
+        } else {
+            // When not playing, show total queue duration
+            this.screen.currentTime.text = this.formatTime(totalDuration);
+        }
+        
+
+
+    }
+
 
 }
