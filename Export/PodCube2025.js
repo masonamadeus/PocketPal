@@ -4357,19 +4357,19 @@ if (reversed == null) { reversed = false; }
 	// BUTTONS
 	this.BTN_MAIN = new lib.ButtonSmall();
 	this.BTN_MAIN.name = "BTN_MAIN";
-	this.BTN_MAIN.setTransform(368.6,184,0.895,0.895,-135,0,0,-0.1,0);
+	this.BTN_MAIN.setTransform(368.6,226,0.895,0.895,-135,0,0,-0.1,0);
 
 	this.BTN_TRANSMISSIONS = new lib.ButtonSmall();
 	this.BTN_TRANSMISSIONS.name = "BTN_TRANSMISSIONS";
-	this.BTN_TRANSMISSIONS.setTransform(167.65,184,0.895,0.895,-135,0,0,-0.1,0);
+	this.BTN_TRANSMISSIONS.setTransform(167.65,226,0.895,0.895,-135,0,0,-0.1,0);
 
 	this.homeHint = new lib.ShortcutButtonSticker("synched",0);
 	this.homeHint.name = "homeHint";
-	this.homeHint.setTransform(319.8,134.05,0.8935,0.8935,44.6001,0,0,0.4,0.1);
+	this.homeHint.setTransform(319.8,176.05,0.8935,0.8935,44.6001,0,0,0.4,0.1);
 
 	this.transHint = new lib.ShortcutButtonSticker("synched",0);
 	this.transHint.name = "transHint";
-	this.transHint.setTransform(118.3,134,0.8935,0.8935,44.6001,0,0,0.3,0.1);
+	this.transHint.setTransform(118.3,176,0.8935,0.8935,44.6001,0,0,0.3,0.1);
 
 	this.BTN_NO = new lib.ButtonSquareNO();
 	this.BTN_NO.name = "BTN_NO";

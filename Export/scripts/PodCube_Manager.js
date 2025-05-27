@@ -31,6 +31,7 @@ class PodCube_Manager {
         // get the various hardcoded symbol paths we need
         return {
             audioPlayer: exportRoot.region_2.Player,
+            backdrop: exportRoot.region_1.backdrop,
 
         }
     }
@@ -203,11 +204,11 @@ class PodCube_Manager {
     }
 
     hideBackdrop() {
-        this._backdrop.visible = false;
+        this.symbolPaths["backdrop"].visible = false;
     }
 
     showBackdrop(){
-        this._backdrop.visible = true;
+        this.symbolPaths["backdrop"].visible = true;
     }
 
 
