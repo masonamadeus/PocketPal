@@ -75,7 +75,7 @@ export class Episode {
         this.rawTitle = data.rawTitle || "";
         
         // Temporal Information
-        this.rawDate = data.date ? new Date(data.date) : null;
+        this.rawDate = data.date ? new PodCube.Class.PodCubeDate(data.date) : null;
         this.published = data.published ? new Date(data.published) : null;
         
         // Recording Information
@@ -138,6 +138,121 @@ export class Episode {
             month: "2-digit",
             day: "2-digit"
         }) : "";
+    }
+
+        get tillToday() {
+        if (!this.rawDate) {
+            return "Unknown";
+        }
+
+        const todayNative = new Date();
+        const todayPodCube = new PodCube.Class.PodCubeDate(
+            todayNative.getFullYear(),
+            todayNative.getMonth(), // 0-indexed
+            todayNative.getDate()
+        );
+
+        const episodeDate = this.rawDate;
+
+        // Determine if episodeDate is in the past or future relative to today
+        // Compare values based on year, month, day for robust ordering
+        const episodeValue = episodeDate.getFullYear() * 10000 + (episodeDate.getMonth() + 1) * 100 + episodeDate.getDate();
+        const todayValue = todayPodCube.getFullYear() * 10000 + (todayPodCube.getMonth() + 1) * 100 + todayPodCube.getDate();
+
+        const isPast = episodeValue < todayValue;
+
+        // Normalize dates so that the earlier date is `start` and the later is `end`
+        let startDate = isPast ? episodeDate : todayPodCube;
+        let endDate = isPast ? todayPodCube : episodeDate;
+
+        let years = 0;
+        let months = 0;
+        let days = 0;
+
+        // Calculate initial year difference
+        years = endDate.getFullYear() - startDate.getFullYear();
+
+        // Adjust months and days based on the current month and day of the year
+        // We'll advance startDate to match endDate's month/day in the current `years` span
+        let tempStartDate = new PodCube.Class.PodCubeDate(
+            startDate.getFullYear(),
+            startDate.getMonth(),
+            startDate.getDate()
+        );
+
+        // Advance tempStartDate year by `years` calculated
+        tempStartDate.year += years;
+
+        // If tempStartDate (now in endDate's year) is after endDate, decrement years
+        // This is the core logic for calculating full years correctly
+        if (tempStartDate.getMonth() > endDate.getMonth() ||
+            (tempStartDate.getMonth() === endDate.getMonth() && tempStartDate.getDate() > endDate.getDate())) {
+            years--;
+            // tempStartDate.year--; // No need to roll back tempStartDate, as we don't use it directly again after this comparison
+        }
+
+        // Now calculate remaining months and days
+        // Calculate difference from the 'true' anniversary date (startDate with `years` added, potentially rolled back)
+        // to endDate.
+        let actualStartForMonthDayCalc = new PodCube.Class.PodCubeDate(
+            startDate.getFullYear() + years,
+            startDate.getMonth(),
+            startDate.getDate()
+        );
+
+        // Month difference
+        months = endDate.getMonth() - actualStartForMonthDayCalc.getMonth();
+        if (months < 0) {
+            months += 12;
+        }
+
+        // Day difference
+        days = endDate.getDate() - actualStartForMonthDayCalc.getDate();
+        if (days < 0) {
+            months--; // Borrow a month
+            // Get the number of days in the month *before* endDate's current month, but for endDate's year
+            // This is the number of days we add to `days` to make it positive.
+            let daysInPreviousMonthOfEndDate = PodCube.Class.PodCubeDate.getDaysInMonth(endDate.getFullYear(), endDate.getMonth() === 0 ? 11 : endDate.getMonth() - 1);
+            days += daysInPreviousMonthOfEndDate;
+        }
+
+        // Final check for negative months after day adjustment (edge case)
+        if (months < 0) {
+            // This should ideally not happen if years were calculated correctly,
+            // but is a safeguard.
+            years--;
+            months += 12;
+        }
+
+        const parts = [];
+
+        if (years > 0) {
+            parts.push(`${years} year${years === 1 ? '' : 's'}`);
+        }
+        if (months > 0) {
+            parts.push(`${months} month${months === 1 ? '' : 's'}`);
+        }
+        // Only include days if it's positive, or if it's 'today' and there are no other parts
+        if (days > 0) { // Only push positive days
+            parts.push(`${days} day${days === 1 ? '' : 's'}`);
+        }
+
+        // Handle cases where the difference is exactly 0 (same date)
+        if (parts.length === 0) {
+            return "today";
+        }
+
+        // Join parts with commas and "and" for the last element
+        let result = "";
+        if (parts.length === 1) {
+            result = parts[0];
+        } else if (parts.length === 2) {
+            result = `${parts[0]} and ${parts[1]}`;
+        } else {
+            result = `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
+        }
+
+        return `${result} ${isPast ? 'ago' : 'from now'}`;
     }
 
     get integrity() {

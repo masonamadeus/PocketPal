@@ -1,4 +1,3 @@
-// PodCube_Feed.js - Simplified for Direct Grouped Access
 export class Feed {
     // Constants for filter thresholds
     static MIN_CATEGORY_THRESHOLD = 2; // For tags, models, origins, locations
@@ -15,7 +14,6 @@ export class Feed {
         this._allEpisodes = episodes || []; // Store the original, complete list
 
         // Pre-calculated filter options (populated dynamically)
-        // These will now just hold all unique values, not filtered by threshold or "Misc"
         this._availableFilterOptions = {
             tags: [],
             models: [],
@@ -23,13 +21,15 @@ export class Feed {
             zones: [],
             locales: [],
             regions: [],
-            years: []
+            years: [] // This will hold the formatted year strings now
         };
 
+        console.log("Feed constructor called. Calling _generateFilterOptions..."); // Added log
         this._generateFilterOptions(); // Populate available options based on initial data
+        console.log("Feed constructor finished. Available years:", this._availableFilterOptions.years); // Added log
     }
 
-    get Episodes(){
+    get Episodes() {
         return this._allEpisodes;
     }
 
@@ -41,8 +41,10 @@ export class Feed {
     setAllEpisodes(episodes) {
         this._allEpisodes = episodes;
         this.metadata.total = episodes.length;
+        console.log("setAllEpisodes called. Re-generating filter options..."); // Added log
         this._generateFilterOptions(); // Re-generate options if base episode data changes
         // No re-application of filters needed as internal state for applied filters is gone
+        console.log("setAllEpisodes finished. New available years:", this._availableFilterOptions.years); // Added log
     }
 
     /**
@@ -61,7 +63,6 @@ export class Feed {
         return normalized;
     }
 
-
     /**
      * Gathers and groups all unique tags, models, origins, and other location fields
      * from the _allEpisodes. This method now populates *all* unique options
@@ -71,6 +72,7 @@ export class Feed {
      * @private
      */
     _generateFilterOptions() {
+        console.log("Entering _generateFilterOptions..."); // Added log
         const uniqueValues = {
             tags: new Set(),
             models: new Set(),
@@ -90,7 +92,13 @@ export class Feed {
             if (ep.zone) uniqueValues.zones.add(ep.zone);
             if (ep.locale) uniqueValues.locales.add(ep.locale);
             if (ep.region) uniqueValues.regions.add(ep.region);
-            if (ep.rawDate) uniqueValues.years.add(ep.rawDate.getFullYear());
+            if (ep.rawDate) {
+                // Ensure rawDate exists and is a valid Date object before calling getFullYear
+                const year = ep.rawDate.getFullYear();
+                if (!isNaN(year)) { // Check if year is a valid number
+                    uniqueValues.years.add(year);
+                }
+            }
         });
 
         this._availableFilterOptions.tags = Array.from(uniqueValues.tags).sort();
@@ -99,213 +107,207 @@ export class Feed {
         this._availableFilterOptions.zones = Array.from(uniqueValues.zones).sort();
         this._availableFilterOptions.locales = Array.from(uniqueValues.locales).sort();
         this._availableFilterOptions.regions = Array.from(uniqueValues.regions).sort();
+        const sortedRawYears = Array.from(uniqueValues.years).sort((a, b) => a - b);
+        console.log("Unique and sorted raw years:", [...sortedRawYears]); // Added log
 
-        this._availableFilterOptions.years = this._groupYearsByEpisodeSequence(Feed.MIN_YEAR_GROUP_THRESHOLD);
+        // Pass the raw unique numerical years for chronological grouping
+        this._availableFilterOptions.years = this._groupYearsByEpisodeSequence(
+            sortedRawYears, // Sorted raw internal numerical years
+            Feed.MIN_YEAR_GROUP_THRESHOLD
+        );
+        console.log("Exiting _generateFilterOptions."); // Added log
     }
 
     /**
-     * Helper to parse a year string ("YYYY" or "YYYY-YYYY") into its start and end years.
+     * Helper to format an internal numerical year (including 0 for 1 BCE, -1 for 2 BCE)
+     * into a display string (e.g., "1971", "1 BCE", "132975 BCE").
+     * Does NOT add "CE" suffix.
+     * @param {number} year - The internal numerical year.
+     * @returns {string} The formatted year string for display.
+     * @private
+     */
+    _formatYearForDisplay(year) {
+        if (year > 0) {
+            return year.toString(); // e.g., 1971
+        } else if (year === 0) {
+            return "1 BCE"; // Astronomical year 0 is 1 BCE
+        } else {
+            return `${Math.abs(year) + 1} BCE`; // Astronomical year -1 is 2 BCE, -2 is 3 BCE, etc.
+        }
+    }
+
+    /**
+     * Helper to parse a year string (e.g., "1971", "1 BCE", "1990-2000", "132975-1 BCE")
+     * into its internal numerical start and end years.
      * @param {string} yearStr - The year string.
-     * @returns {{start: number, end: number}} An object with start and end years.
+     * @returns {{start: number, end: number}} An object with internal numerical start and end years.
      * @private
      */
     _parseYearString(yearStr) {
+        const parseSingleYearInternal = (str) => {
+            str = str.trim();
+            if (str.endsWith('BCE')) {
+                const bceYearNum = parseInt(str.slice(0, -4)); // e.g., "1" from "1 BCE"
+                // Convert BCE display year to internal numerical year:
+                // 1 BCE (display 1) -> internal 0
+                // 2 BCE (display 2) -> internal -1
+                // X BCE (display X) -> internal -(X - 1)
+                return -(bceYearNum - 1);
+            }
+            // For standard years (e.g., "1971"), parse directly
+            return parseInt(str);
+        };
+
         if (yearStr.includes('-')) {
-            const parts = yearStr.split('-').map(Number);
-            return { start: parts[0], end: parts[1] };
+            const parts = yearStr.split('-').map(part => part.trim());
+            const start = parseSingleYearInternal(parts[0]);
+            const end = parseSingleYearInternal(parts[1]);
+            // Ensure start is always chronologically earlier (smaller internal number) than end
+            return { start: Math.min(start, end), end: Math.max(start, end) };
         }
-        const year = Number(yearStr);
+        const year = parseSingleYearInternal(yearStr);
         return { start: year, end: year };
     }
 
+
     /**
      * Helper to get episodes for a single year efficiently (with caching).
-     * @param {number} year - The year to get episodes for.
+     * Uses internal numerical years.
+     * @param {number} year - The internal numerical year to get episodes for.
      * @returns {Episode[]} An array of episodes for that year.
      * @private
      */
     _getEpisodesForYear(year) {
+        // console.log(`_getEpisodesForYear called for year: ${year}`); // Log for debugging
         if (!this._episodeCacheByYear) { // Simple cache for performance
+            // console.log("Initializing _episodeCacheByYear..."); // Log for debugging
             this._episodeCacheByYear = new Map();
             this._allEpisodes.forEach(ep => {
                 if (ep.rawDate) {
-                    const epYear = ep.rawDate.getFullYear();
+                    const epYear = ep.rawDate.getFullYear(); // This is the internal numerical year
                     if (!this._episodeCacheByYear.has(epYear)) {
                         this._episodeCacheByYear.set(epYear, []);
                     }
                     this._episodeCacheByYear.get(epYear).push(ep);
                 }
             });
+            // console.log("Episode cache populated:", this._episodeCacheByYear); // Log for debugging
         }
         return this._episodeCacheByYear.get(year) || [];
     }
 
     /**
      * Groups years based on collecting all episodes from a chronological sequence
-     * of years until the MIN_YEAR_GROUP_THRESHOLD is met for that chunk.
-     * Includes a post-processing step to merge small single-year groups into adjacent spans.
+     * of years until the minGroupThreshold is met for that chunk.
      * This method does NOT include "All Years".
      *
+     * @param {number[]} sortedUniqueYears - An array of unique, chronologically sorted internal numerical years.
      * @param {number} minGroupThreshold - The minimum number of episodes to attempt to include in a group.
-     * @returns {string[]} An array of chronologically sorted year strings (e.g., "2020", "1990-2000").
+     * @returns {string[]} An array of chronologically sorted year display strings (e.g., "2020", "1990-2000", "132975-1 BCE").
      * @private
      */
-    _groupYearsByEpisodeSequence(minGroupThreshold) {
-        if (this._allEpisodes.length === 0) {
-            return []; // No years if no episodes
-        }
+    _groupYearsByEpisodeSequence(sortedUniqueYears, minGroupThreshold) {
+        console.log("Entering _groupYearsByEpisodeSequence with sortedUniqueYears:", sortedUniqueYears); // Added log
 
-        // 1. Get all unique years from episodes and sort them numerically
-        const uniqueYears = Array.from(new Set(this._allEpisodes
-            .filter(ep => ep.rawDate)
-            .map(ep => ep.rawDate.getFullYear())))
-            .sort((a, b) => a - b);
-
-        if (uniqueYears.length === 0) {
+        if (sortedUniqueYears.length === 0) {
+            console.log("No unique years, returning empty array."); // Added log
             return [];
         }
 
-        const initialGroups = []; // Stores strings like "2020" or "1990-2000"
-        let currentGroupYears = []; // Stores the actual year numbers for the current potential group
-        let currentGroupEpisodeCount = 0; // Tracks episode count for the current potential group
+        // Step 1: Create initial groups based on the minimum threshold
+        // Each element will store internal numerical year range and its episode count
+        const initialNumericalGroups = [];
+        let currentGroupYears = [];
+        let currentGroupEpisodeCount = 0;
 
-
-        for (let i = 0; i < uniqueYears.length; i++) {
-            const year = uniqueYears[i];
+        for (let i = 0; i < sortedUniqueYears.length; i++) {
+            const year = sortedUniqueYears[i];
             const episodesInThisYear = this._getEpisodesForYear(year);
 
             currentGroupEpisodeCount += episodesInThisYear.length;
             currentGroupYears.push(year);
 
-            // Check if we've met the threshold OR if this is the last year
-            if (currentGroupEpisodeCount >= minGroupThreshold || i === uniqueYears.length - 1) {
-                const startYear = currentGroupYears[0];
-                const endYear = currentGroupYears[currentGroupYears.length - 1];
-                const groupString = startYear === endYear ? startYear.toString() : `${startYear}-${endYear}`;
-
-                initialGroups.push(groupString);
-
+            // If threshold met OR this is the last year, finalize the current group
+            if (currentGroupEpisodeCount >= minGroupThreshold || i === sortedUniqueYears.length - 1) {
+                initialNumericalGroups.push({
+                    start: currentGroupYears[0],
+                    end: currentGroupYears[currentGroupYears.length - 1],
+                    episodeCount: currentGroupEpisodeCount
+                });
                 // Reset for the next group
                 currentGroupYears = [];
                 currentGroupEpisodeCount = 0;
             }
         }
+        console.log("Initial numerical groups:", initialNumericalGroups); // Added log
 
-        // --- Post-processing step: Merge small single-year groups into adjacent larger groups ---
-        const finalMergedGroups = [];
+        // Step 2: Consolidate / Merge adjacent groups into final display strings.
+        const finalDisplayGroups = [];
+        if (initialNumericalGroups.length === 0) {
+            return [];
+        }
 
-        for (let i = 0; i < initialGroups.length; i++) {
-            const currentGroupString = initialGroups[i];
-            const { start: currentStart, end: currentEnd } = this._parseYearString(currentGroupString);
+        let currentConsolidatedStart = initialNumericalGroups[0].start;
+        let currentConsolidatedEnd = initialNumericalGroups[0].end;
 
-            // Calculate episode count for the current group
-            let currentGroupTotalEpisodes = 0;
-            for (let year = currentStart; year <= currentEnd; year++) {
-                currentGroupTotalEpisodes += this._getEpisodesForYear(year).length;
-            }
+        for (let i = 1; i < initialNumericalGroups.length; i++) {
+            const nextGroup = initialNumericalGroups[i];
 
-
-            // If the current group is a single year AND its episode count is below threshold,
-            // try to merge it with an adjacent group.
-            // We prioritize merging backward (to the previous group) if possible.
-            if (currentStart === currentEnd && currentGroupTotalEpisodes < minGroupThreshold) {
-                let merged = false;
-
-                // Try to merge with the previous group
-                if (finalMergedGroups.length > 0) {
-                    const prevGroupString = finalMergedGroups[finalMergedGroups.length - 1];
-                    const { start: prevStart, end: prevEnd } = this._parseYearString(prevGroupString);
-
-                    // Check if current group is chronologically adjacent to the previous group
-                    if (currentStart === prevEnd + 1) {
-                        // Merge current group into the previous one by updating the last group string
-                        finalMergedGroups[finalMergedGroups.length - 1] = `${prevStart}-${currentEnd}`;
-                        merged = true;
-                    }
-                }
-
-                // If not merged with previous, and there's a next group, try merging with it
-                // (Note: This is less common as backward merge is prioritized, but good for completeness)
-                if (!merged && i < initialGroups.length - 1) {
-                    const nextGroupString = initialGroups[i + 1];
-                    const { start: nextStart, end: nextEnd } = this._parseYearString(nextGroupString);
-
-                    // Check if current group is chronologically adjacent to the next group
-                    if (currentEnd === nextStart - 1) {
-                        // Create a new merged string and replace both current and next in the *initialGroups*
-                        // array for the *next iteration's consideration*. This helps consolidate across the loop.
-                        // We then skip the next group in the outer loop.
-                        initialGroups[i+1] = `${currentStart}-${nextEnd}`; // Modify the next element in the source array
-                        merged = true;
-                    }
-                }
-
-                // If it couldn't be merged with either adjacent group, add it as is (it's an isolated small year)
-                if (!merged) {
-                    finalMergedGroups.push(currentGroupString);
-                }
-
+            // Check if the next group is directly consecutive to the current consolidated range
+            if (nextGroup.start === currentConsolidatedEnd + 1) {
+                // They are consecutive, so extend the current consolidated range
+                currentConsolidatedEnd = nextGroup.end;
             } else {
-                // If it's a multi-year range or a single year that meets the threshold, add it directly
-                finalMergedGroups.push(currentGroupString);
+                // Not consecutive, so finalize the current consolidated group's string
+                const formattedStart = this._formatYearForDisplay(currentConsolidatedStart);
+                const formattedEnd = this._formatYearForDisplay(currentConsolidatedEnd);
+                finalDisplayGroups.push(currentConsolidatedStart === currentConsolidatedEnd ?
+                    formattedStart : `${formattedStart}-${formattedEnd}`);
+
+                // Start a new consolidated group with the current `nextGroup`'s values
+                currentConsolidatedStart = nextGroup.start;
+                currentConsolidatedEnd = nextGroup.end;
             }
         }
-        // One final pass to clean up any consecutive simple ranges that might have been created
-        // by the merging logic, but aren't yet consolidated into a single string.
-        const consolidatedGroups = [];
-        if (finalMergedGroups.length > 0) {
-            let currentConsolidatedStart = this._parseYearString(finalMergedGroups[0]).start;
-            let currentConsolidatedEnd = this._parseYearString(finalMergedGroups[0]).end;
 
-            for (let i = 1; i < finalMergedGroups.length; i++) {
-                const { start: nextStart, end: nextEnd } = this._parseYearString(finalMergedGroups[i]);
-                if (nextStart === currentConsolidatedEnd + 1) { // If next group is consecutive
-                    currentConsolidatedEnd = nextEnd;
-                } else {
-                    consolidatedGroups.push(currentConsolidatedStart === currentConsolidatedEnd ?
-                        currentConsolidatedStart.toString() : `${currentConsolidatedStart}-${currentConsolidatedEnd}`);
-                    currentConsolidatedStart = nextStart;
-                    currentConsolidatedEnd = nextEnd;
-                }
-            }
-            consolidatedGroups.push(currentConsolidatedStart === currentConsolidatedEnd ?
-                currentConsolidatedStart.toString() : `${currentConsolidatedStart}-${currentConsolidatedEnd}`);
-        }
+        // Add the very last consolidated group after the loop finishes
+        const formattedStart = this._formatYearForDisplay(currentConsolidatedStart);
+        const formattedEnd = this._formatYearForDisplay(currentConsolidatedEnd);
+        finalDisplayGroups.push(currentConsolidatedStart === currentConsolidatedEnd ?
+            formattedStart : `${formattedStart}-${formattedEnd}`);
 
-        return consolidatedGroups; // Already chronologically sorted
+        console.log("Before final sort, finalDisplayGroups:", [...finalDisplayGroups]); // Added log
+
+        // **FIX STARTS HERE: Re-sort the final display strings to ensure chronological order.**
+        // This is the most robust way to guarantee the displayed order,
+        // especially if subtle edge cases in consolidation lead to misplacements.
+        finalDisplayGroups.sort((a, b) => {
+            const { start: aStart } = this._parseYearString(a);
+            const { start: bStart } = this._parseYearString(b);
+
+            console.log(`Comparing: "${a}" (start: ${aStart}) vs "${b}" (start: ${bStart}). Result: ${aStart - bStart}`); // Added log
+
+            return aStart - bStart;
+        });
+
+        console.log("After final sort, finalDisplayGroups:", [...finalDisplayGroups]); // Added log
+
+        return finalDisplayGroups;
     }
 
-    // --- Accessors for available filter options (unchanged, still useful for UI) ---
-    // These now return all unique values, without "Misc" or thresholding.
-    // The grouping methods will decide how to categorize.
 
-    getAvailableTags() {
-        return [...this._availableFilterOptions.tags];
+    // --- Accessors for available filter options  ---
+    getAvailableFilterOptions() {
+        return Object.keys(this._availableFilterOptions);
     }
 
-    getAvailableModels() {
-        return [...this._availableFilterOptions.models];
-    }
-
-    getAvailableOrigins() {
-        return [...this._availableFilterOptions.origins];
-    }
-
-    getAvailableZones() {
-        return [...this._availableFilterOptions.zones];
-    }
-
-    getAvailableLocales() {
-        return [...this._availableFilterOptions.locales];
-    }
-
-    getAvailableRegions() {
-        return [...this._availableFilterOptions.regions];
-    }
-
-    getAvailableYears() {
-        return [...this._availableFilterOptions.years];
-    }
+    getAvailableTags() { return [...this._availableFilterOptions.tags]; }
+    getAvailableModels() { return [...this._availableFilterOptions.models]; }
+    getAvailableOrigins() { return [...this._availableFilterOptions.origins]; }
+    getAvailableZones() { return [...this._availableFilterOptions.zones]; }
+    getAvailableLocales() { return [...this._availableFilterOptions.locales]; }
+    getAvailableRegions() { return [...this._availableFilterOptions.regions]; }
+    getAvailableYears() {return [...this._availableFilterOptions.years]; }
 
     // --- NEW/RETAINED METHODS FOR ORGANIZED GROUPINGS ---
 
@@ -313,6 +315,7 @@ export class Feed {
      * Returns an object where keys are normalized tags and values are arrays of episodes
      * belonging to that normalized tag. Includes 'Misc Tags' if applicable.
      * Groups are sorted descending by episode count.
+     * Episodes within each group are sorted chronologically (earliest to latest by rawDate).
      * @returns {Object.<string, Episode[]>}
      */
     getEpisodesByTag() {
@@ -352,109 +355,29 @@ export class Feed {
             return countB - countA; // Descending by count
         });
 
-        const orderedGroups = {};
-        finalGroupsArray.forEach(group => {
-            orderedGroups[group.key] = group.episodes;
-        });
+        const finalOrderedGroups = {};
 
+        // Add "Misc Tags" if there are any episodes in it
         if (miscTagsEpisodes.length > 0) {
-            orderedGroups["Misc Tags"] = miscTagsEpisodes;
+            // Sort "Misc Tags" episodes chronologically
+            miscTagsEpisodes.sort((a, b) => {
+                const dateA = a.rawDate ? a.rawDate.getTime() : 0;
+                const dateB = b.rawDate ? b.rawDate.getTime() : 0;
+                return dateA - dateB;
+            });
+            // Place "Misc Tags" at the end of the list
+            finalGroupsArray.push({ key: "Misc Tags", episodes: miscTagsEpisodes });
         }
 
-        return orderedGroups;
-    }
 
-
-    /**
-     * Returns an object where keys are models and values are arrays of episodes
-     * belonging to that model. Includes one-off values in their own groups.
-     * Groups are sorted descending by episode count.
-     * @returns {Object.<string, Episode[]>}
-     */
-    getEpisodesByModel() {
-        return this._getEpisodesByCategoricalProperty('model', Feed.MIN_CATEGORY_THRESHOLD);
-    }
-
-    /**
-     * Returns an object where keys are origins and values are arrays of episodes
-     * belonging to that origin. Includes one-off values in their own groups.
-     * Groups are sorted descending by episode count.
-     * @returns {Object.<string, Episode[]>}
-     */
-    getEpisodesByOrigin() {
-        return this._getEpisodesByCategoricalProperty('origin', Feed.MIN_CATEGORY_THRESHOLD);
-    }
-
-    /**
-     * Returns an object where keys are zones and values are arrays of episodes
-     * belonging to that zone. Includes one-off values in their own groups.
-     * Groups are sorted descending by episode count.
-     * @returns {Object.<string, Episode[]>}
-     */
-    getEpisodesByZone() {
-        return this._getEpisodesByCategoricalProperty('zone', Feed.MIN_CATEGORY_THRESHOLD);
-    }
-
-    /**
-     * Returns an object where keys are locales and values are arrays of episodes
-     * belonging to that locale. Includes one-off values in their own groups.
-     * Groups are sorted descending by episode count.
-     * @returns {Object.<string, Episode[]>}
-     */
-    getEpisodesByLocale() {
-        return this._getEpisodesByCategoricalProperty('locale', Feed.MIN_CATEGORY_THRESHOLD);
-    }
-
-    /**
-     * Returns an object where keys are regions and values are arrays of episodes
-     * belonging to that region. Includes one-off values in their own groups.
-     * Groups are sorted descending by episode count.
-     * @returns {Object.<string, Episode[]>}
-     */
-    getEpisodesByRegion() {
-        return this._getEpisodesByCategoricalProperty('region', Feed.MIN_CATEGORY_THRESHOLD);
-    }
-
-    /**
-     * A helper method to group episodes by a given categorical property,
-     * handling one-off values in their own groups and sorting by count.
-     *
-     * This method ensures the keys in the returned object are ordered by
-     * episode count (descending), then alphabetically for ties.
-     *
-     * @param {string} prop - The episode property to group by (e.g., 'model', 'origin').
-     * @param {number} minThreshold - The minimum number of episodes for a category to be considered 'explicit'.
-     * @returns {Object.<string, Episode[]>}
-     * @private
-     */
-    _getEpisodesByCategoricalProperty(prop, minThreshold) {
-        const tempGroups = new Map(); // Stores key -> array of episodes
-
-        this._allEpisodes.forEach(ep => {
-            const value = ep[prop];
-            if (value !== undefined && value !== null) { // Only process if the property has a value
-                if (!tempGroups.has(value)) {
-                    tempGroups.set(value, []);
-                }
-                tempGroups.get(value).push(ep);
-            }
-        });
-
-        // Convert map to array of { key, episodes } objects for sorting
-        const sortedGroupsArray = Array.from(tempGroups.entries()).map(([key, episodes]) => ({ key, episodes }));
-
-        // Sort the array of groups by episode count (descending), then by key (alphabetical)
-        sortedGroupsArray.sort((a, b) => {
-            const countA = a.episodes.length;
-            const countB = b.episodes.length;
-            if (countA === countB) {
-                return a.key.localeCompare(b.key); // Alphabetical if counts are equal
-            }
-            return countB - countA; // Descending by count
-        });
-
-        const finalOrderedGroups = {};
-        sortedGroupsArray.forEach(group => {
+        // Convert the sorted array back into an object
+        finalGroupsArray.forEach(group => {
+            // Ensure episodes within each group are sorted chronologically
+            group.episodes.sort((a, b) => {
+                const dateA = a.rawDate ? a.rawDate.getTime() : 0;
+                const dateB = b.rawDate ? b.rawDate.getTime() : 0;
+                return dateA - dateB; // Ascending order (earliest first)
+            });
             finalOrderedGroups[group.key] = group.episodes;
         });
 
@@ -463,58 +386,51 @@ export class Feed {
 
 
     /**
-     * Returns an object where keys are year strings (e.g., "2020", "1990-2000")
-     * and values are arrays of episodes belonging to that year or year range.
-     * This method does NOT include an "All Years" category.
+     * Returns an array of objects, where each object represents a year group
+     * with its corresponding episodes. The array is chronologically sorted (BCE first).
      *
-     * The keys in the returned object will be in chronological ascending order.
-     * Each array of episodes within the groups will be sorted chronologically by published date (newest first).
-     * @returns {Object.<string, Episode[]>}
+     * @returns {Array<{year: string, episodes: Episode[]}>} An array of year group objects.
      */
     getEpisodesByYear() {
-        const yearGroupsMap = new Map(); // Stores key -> array of episodes
+        console.log("Entering getEpisodesByYear...");
+        const yearGroupsMap = new Map();
 
-        // `getAvailableYears()` provides the chronologically sorted year strings
         const sortedYearKeys = this.getAvailableYears();
         const allEpisodes = this._allEpisodes;
 
-        // Populate the map based on the sorted keys, ensuring insertion order
-        for (const yearKey of sortedYearKeys) {
-            let episodesForGroup = [];
-            if (yearKey.includes('-')) {
-                const [start, end] = yearKey.split('-').map(Number);
-                episodesForGroup = allEpisodes.filter(ep =>
-                    ep.rawDate && ep.rawDate.getFullYear() >= start && ep.rawDate.getFullYear() <= end
-                );
-            } else {
-                const year = Number(yearKey);
-                episodesForGroup = allEpisodes.filter(ep =>
-                    ep.rawDate && ep.rawDate.getFullYear() === year
-                );
-            }
+        console.log("getEpisodesByYear - sortedYearKeys from getAvailableYears():", sortedYearKeys);
 
-            // ONLY NEW PART: Sort the episodes within this group chronologically (newest first by published date)
+        for (const yearKey of sortedYearKeys) {
+            const { start: internalStartYear, end: internalEndYear } = this._parseYearString(yearKey);
+            console.log(`Processing yearKey: "${yearKey}" -> internal years: start=${internalStartYear}, end=${internalEndYear}`);
+
+            let episodesForGroup = allEpisodes.filter(ep =>
+                ep.rawDate && ep.rawDate.getFullYear() >= internalStartYear && ep.rawDate.getFullYear() <= internalEndYear
+            );
+
             episodesForGroup.sort((a, b) => {
-                const dateA = a.published ? a.published.getTime() : 0;
-                const dateB = b.published ? b.published.getTime() : 0;
-                return dateB - dateA; // Descending order (newest first)
+                const dateA = a.rawDate ? a.rawDate.getTime() : 0;
+                const dateB = b.rawDate ? b.rawDate.getTime() : 0;
+                return dateA - dateB;
             });
 
-            // Only add group if it actually has episodes
             if (episodesForGroup.length > 0) {
                 yearGroupsMap.set(yearKey, episodesForGroup);
             }
         }
+        console.log("getEpisodesByYear - yearGroupsMap populated. Keys:", Array.from(yearGroupsMap.keys()));
 
-        // Convert the Map to a plain object. Modern JS engines guarantee insertion order
-        // for string keys, so the order from the Map will be preserved.
-        const finalOrderedGroups = {};
-        yearGroupsMap.forEach((episodes, key) => {
-            finalOrderedGroups[key] = episodes;
-        });
+        // Convert the Map to an array of { year, episodes } objects
+        const finalOrderedGroupsArray = Array.from(yearGroupsMap.entries()).map(([year, episodes]) => ({
+            year,
+            episodes
+        }));
 
-        return finalOrderedGroups;
+        console.log("Exiting getEpisodesByYear. Final ordered groups (array of objects):", finalOrderedGroupsArray.map(g => g.year));
+
+        return finalOrderedGroupsArray;
     }
+
 
     /**
      * Provides a direct way to get a filtered and sorted list of episodes based on a specific criteria object.
@@ -529,9 +445,9 @@ export class Feed {
      * @param {string} [criteria.zone] - Filter by a specific zone.
      * @param {string} [criteria.locale] - Filter by a specific locale.
      * @param {string} [criteria.region] - Filter by a specific region.
-     * @param {string} [criteria.year] - Filter by a specific year or year range string. "All Years" returns all episodes.
-     * @param {'published'|'title'|'duration'|'integrity'} [criteria.sortBy='published'] - The property to sort by.
-     * @param {boolean} [criteria.sortAscending=false] - Whether to sort in ascending order.
+     * @param {string} [criteria.year] - Filter by a specific year or year range string (e.g., "1971", "132975-1 BCE"). "All Years" returns all episodes.
+     * @param {'published'|'rawDate'|'title'|'duration'|'integrity'} [criteria.sortBy='published'] - The property to sort by. 'rawDate' for episode date, 'published' for release date.
+     * @param {boolean} [criteria.sortAscending=false] - Whether to sort in ascending order. (Default `false` means newest-first for dates, Z-A for titles, etc.)
      * @returns {Episode[]} An array of episodes matching the criteria.
      */
     getFilteredAndSortedList(criteria = {}) {
@@ -539,14 +455,11 @@ export class Feed {
 
         // Ensure yearRange is correctly derived for this ad-hoc request
         let yearRange = { start: null, end: null };
-        if (criteria.year === "All Years" || !criteria.year) { // Keep "All Years" support for ad-hoc filtering
-            yearRange = { start: null, end: null };
-        } else if (criteria.year.includes('-')) {
-            const [start, end] = criteria.year.split('-').map(Number);
-            yearRange = { start, end };
-        } else {
-            const year = parseInt(criteria.year, 10);
-            yearRange = { start: year, end: year };
+        if (criteria.year === "All Years" || !criteria.year) {
+            yearRange = { start: null, end: null }; // No year filtering
+        } else if (criteria.year) {
+            // Use the _parseYearString to handle both single and range display strings
+            yearRange = this._parseYearString(criteria.year);
         }
 
         // 1. Apply Filters
@@ -573,15 +486,17 @@ export class Feed {
                 }
             });
             const explicitTagsForFiltering = Array.from(tagsWithCounts.entries())
-                                                .filter(([, count]) => count >= Feed.MIN_CATEGORY_THRESHOLD)
-                                                .map(([tag]) => tag);
+                .filter(([, count]) => count >= Feed.MIN_CATEGORY_THRESHOLD)
+                .map(([tag]) => tag);
 
             if (normalizedSelectedTag === this._normalizeTag("Misc Tags")) {
                 currentWorkingList = currentWorkingList.filter(ep =>
                     ep.tags && ep.tags.some(tag => {
                         const normalizedEpisodeTag = this._normalizeTag(tag);
+                        // An episode belongs to "Misc Tags" if it has *any* tag that isn't explicitly listed
+                        // as meeting the threshold for a named category.
                         return !explicitTagsForFiltering.includes(normalizedEpisodeTag);
-                    })
+                    }) && ep.tags.length > 0 // Ensure it actually has tags
                 );
             } else {
                 currentWorkingList = currentWorkingList.filter(ep =>
@@ -601,26 +516,30 @@ export class Feed {
         currentWorkingList = adHocApplyCategoricalFilter(currentWorkingList, 'locale', criteria.locale);
         currentWorkingList = adHocApplyCategoricalFilter(currentWorkingList, 'region', criteria.region);
 
-        if (criteria.year && criteria.year !== "All Years") {
+        if (criteria.year && criteria.year !== "All Years" && yearRange.start !== null) {
             currentWorkingList = currentWorkingList.filter(ep => {
                 if (!ep.rawDate) return false;
                 const episodeYear = ep.rawDate.getFullYear();
-                const { start, end } = yearRange;
+                const { start, end } = yearRange; // These are already internal numerical years
                 return episodeYear >= start && episodeYear <= end;
             });
         }
 
         // 2. Apply Sorting
         const sortBy = criteria.sortBy || 'published';
-        const sortAscending = criteria.sortAscending || false;
+        const sortAscending = criteria.sortAscending || false; // Default: false (descending/newest first)
 
         currentWorkingList.sort((a, b) => {
             let valA, valB;
             switch (sortBy) {
-                case 'date':
-                case 'published':
+                case 'published': // For "most recently released" content
                     valA = a.published ? a.published.getTime() : 0;
                     valB = b.published ? b.published.getTime() : 0;
+                    break;
+                case 'rawDate': // For episode chronological date
+                case 'date': // Alias for rawDate
+                    valA = a.rawDate ? a.rawDate.getTime() : 0;
+                    valB = b.rawDate ? b.rawDate.getTime() : 0;
                     break;
                 case 'title':
                     valA = a.title ? a.title.toLowerCase() : '';
@@ -644,7 +563,7 @@ export class Feed {
             if (valA > valB) {
                 return sortAscending ? 1 : -1;
             }
-            return 0;
+            return 0; // Equal
         });
 
         return currentWorkingList;

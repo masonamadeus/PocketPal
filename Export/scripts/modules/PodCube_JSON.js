@@ -28,7 +28,7 @@ export class PodCubeJSON {
         const data = {};
 
         for (const line of lines) {
-            const match = line.match(/^:: ([A-Z ]+): (.+)$/);
+            const match = line.match(/^:: ([A-Z ]+): (.+)$/); //match podcube indicator of :: tag: value
             if (!match) continue;
             const key = match[1].toLowerCase().replace(/ /g, '_');
             let value = match[2].trim();

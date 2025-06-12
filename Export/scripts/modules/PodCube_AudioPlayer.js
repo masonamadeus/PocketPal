@@ -413,6 +413,17 @@ export class PodCubeAudioPlayer {
             }
         }
 
+        // show indicator if queue exceeds 3 episodes
+        if (this.queue.length > 4) {
+            this.screen.moreQ.visible = true;
+            this.screen.moreQ.amount.text = this.queue.length - 4;
+        }
+
+        if (this.queue.length <= 4) {
+            this.screen.moreQ.visible = false;
+            this.screen.moreQ.amount.text = "00";
+        }
+
         this.onTimeUpdate();
     }
 

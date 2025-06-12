@@ -1,67 +1,79 @@
-// SC_TRANSMISSIONS.js - Refactored for Readability
+// SC_TRANSMISSIONS.js
+
 import { PodCubeScreen } from "../classes/PodCube_Screen.js";
 
 export class SC_TRANSMISSIONS extends PodCubeScreen {
 
     // --- 1. Class Properties (Initialization) ---
-    // Properties are grouped at the top for quick understanding of the class's state.
     constructor(symbol) {
         super(symbol);
-        this.episodeSymbols = []; // Array to hold the visual symbols for episodes
-        this.selectedIndex = 0;   // Index of the currently selected episode symbol
-        this.listView = null;     // Reference to the main LISTVIEW display object
-        this.scrollContainer = null; // Container for scrollable episode symbols
-        this.totalContentHeight = 0; // Total height of all episode symbols combined
-        this.filterContextText = null // Reference to the text field that shows what is being filtered
+        this.episodeSymbols = [];
+        this.filterOptionsSymbols = []; // Renamed for clarity in populateFilterOptions
+        this.filterGroupsSymbols = [];  // Renamed for clarity in populateFilterGroups
+        this.selectedIndex = 0;     // Index of the currently selected episode symbol
+        this.listView = null;
+        this.scrollContainer = null; // General scroll container reference (now handled by _makeScrollContainer return)
 
         // UI-related padding/sizing
         this.listItemHeight = 120; // Consistent vertical space for each list item
         this.detailsPadding = 0;   // Dynamic padding for details view
 
-        // Filter and Sort state management
-        this.currentFilters = {}; // Stores active filter criteria (e.g., tag, model, search)
-        this.currentSort = { sortBy: 'published', sortAscending: false }; // Stores active sort criteria (e.g., sortBy, sortAscending)
-
-        // --- NEW: Filter UI State ---
-        this.filterUIContainer = null; // Main container for the filter UI elements
-        this.filterCategoriesSymbols = []; // Symbols representing filter categories (Tags, Models, Years)
-        this.filterOptionsSymbols = [];    // Symbols representing options within a selected category (Sci-Fi, 2020)
-        this.currentFilterCategoryIndex = 0; // Index of the selected filter category
-        this.currentFilterOptionIndex = 0;   // Index of the selected option within a category
-        this.filterUIMode = 'categories';    // 'categories' or 'options' (determines navigation)
-
-        // Map filter category display names to their corresponding data access methods in PodCube.Feed
-        this.filterCategoryMap = {
-            "Tags": { method: "getAvailableTags", type: "tag" },
-            "Models": { method: "getAvailableModels", type: "model" },
-            "Years": { method: "getAvailableYears", type: "year" },
-            "Origins": { method: "getAvailableOrigins", type: "origin" },
-            "Zones": { method: "getAvailableZones", type: "zone" },
-            "Locales": { method: "getAvailableLocales", type: "locale" },
-            "Regions": { method: "getAvailableRegions", type: "region" }
-            // Add other filter categories here as needed
+        // --- NEW: Current Filtering & Sorting Criteria ---
+        this.currentCriteria = {
+            // searchQuery: null, // REMOVED: No search functionality via fixed buttons
+            tag: null,
+            model: null,
+            origin: null,
+            zone: null,
+            locale: null,
+            region: null,
+            year: null,
+            sortBy: "published", // Default sort by published date
+            sortAscending: false, // Default to descending (newest first for published date)
+            // UI state: tracks which filter category is currently selected in the filter options list
+            activeFilterCategory: 'sortBy' // Default filter category selected in UI
         };
-        this.availableFilterCategories = Object.keys(this.filterCategoryMap); // Just the display names
 
-        // --- END NEW ---
+        // --- NEW: Map for Filter Option to Feed Method and Display ---
+        this._filterOptionMapping = {
+            // Key in currentCriteria : { Display Label, PodCube.Feed getter for values, (optional) custom values for sortBy }
+            // searchQuery: { label: "Search", isSearch: true }, // REMOVED
+            tag: { label: "Tags", getter: "getAvailableTags" },
+            model: { label: "Models", getter: "getAvailableModels" },
+            origin: { label: "Origins", getter: "getAvailableOrigins" },
+            zone: { label: "Zones", getter: "getAvailableZones" },
+            locale: { label: "Locales", getter: "getAvailableLocales" },
+            region: { label: "Regions", getter: "getAvailableRegions" },
+            year: { label: "Years", getter: "getAvailableYears" },
+            sortBy: { label: "Sort By", getter: null, customValues: ['published', 'rawDate', 'title', 'duration', 'integrity'] }
+        };
+
+        // --- NEW: Map for Sort By value to Display Label ---
+        this._sortByLabels = {
+            published: "Published Date",
+            rawDate: "Episode Date",
+            title: "Title",
+            duration: "Duration",
+            integrity: "Integrity"
+        };
     }
 
     // --- 2. Lifecycle Methods (Init, Show, Destroy) ---
-    // These methods handle the screen's lifecycle.
-
     onShow() {
         PodCube.log('SC_TRANSMISSIONS: Screen shown.');
     }
 
     onInit() {
         this._initializeDisplayObjects(); // Setup core display objects
-        this.registerContexts();          // Define user interaction contexts
+        this.registerContexts();         // Define user interaction contexts
 
-        // for now, init with all episodes from feed
-        this.onFeedEpisodesChanged(PodCube.Feed.Episodes)
+        // Initialize with all episodes from feed based on default criteria
+        this.refreshEpisodeList();
+        this.populateFilterOptions(); // Populate filter categories initially
 
         PodCube.log("SC_TRANSMISSIONS: Contexts registered.");
         this.switchContext("Transmissions:List"); // Default context on init
+        this.symbol.playToLabel("transmissions")
     }
 
     onDestroy() {
@@ -70,61 +82,219 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
     }
 
     // --- 3. Core Initialization Helpers (Private Methods) ---
-    // Helper methods called during onInit for better modularity.
-
     _initializeDisplayObjects() {
+        // --- LIST VIEW ---
         this.listView = this.symbol.LISTVIEW;
         if (!this.listView) {
             console.error("SC_TRANSMISSIONS: LISTVIEW instance not found. Cannot proceed.");
             return;
         }
+        this.episodeList = this._makeScrollContainer(this.listView);
 
-        this.filterContextText = this.symbol.filterContext; // Assuming this is a TextField
+        // --- FILTER VIEWS ---
+        // Ensure filterOptions and filterGroups are properly hidden/shown via Animate labels
+        this.filterOptionsList = this._makeScrollContainer(this.symbol.frame.filterOptions.list);
+        this.filterGroupsList = this._makeScrollContainer(this.symbol.frame.filterGroups.list);
+        this.filterGroupsIndicator = this.symbol.frame.filterGroups.activeIndicator;
+        this.filterOptionsIndicator = this.symbol.frame.filterOptions.activeIndicator;
 
-        this.scrollContainer = new createjs.Container();
-        this.listView.addChild(this.scrollContainer);
+        this.filterOptionsListItem = PodCube.lib.LI_FILTEROPTION;
+        this.filterGroupsListItem = PodCube.lib.LI_FILTERGROUP;
+        this.episodeSymbol = PodCube.lib._EPISODE;
+    }
 
-        // Apply a mask to the scroll container to keep items within the list view bounds
+    _makeScrollContainer(parentSymbol) {
+        const scrollContainer = new createjs.Container();
+        parentSymbol.addChild(scrollContainer);
+
+        // Mask
         const mask = new createjs.Shape();
-        mask.graphics.beginFill("#000")
-            .drawRect(0, 0, this.listView.nominalBounds.width, this.listView.nominalBounds.height);
-        this.scrollContainer.mask = mask;
+        const bounds = parentSymbol.nominalBounds;
+        mask.graphics.beginFill("#000").drawRect(0, 0, bounds.width, bounds.height);
+        scrollContainer.mask = mask;
 
-        // --- NEW: Initialize Filter UI Container ---
-        this.filterUIContainer = new createjs.Container();
-        // Position it where your filter UI should appear. For now, let's overlap the listview.
-        // You might want to position it differently or have a dedicated 'filterPanel' symbol.
-        this.symbol.addChild(this.filterUIContainer);
-        this.filterUIContainer.visible = false; // Start hidden
-        // --- END NEW ---
+        // State for this specific scroll container
+        scrollContainer.symbols = [];
+        scrollContainer.selectedIndex = 0;
+        scrollContainer.totalContentHeight = 0;
+        scrollContainer.parentSymbol = parentSymbol; // Reference to its parent symbol in Animate
+        parentSymbol._scrollContainer = scrollContainer; // Store reference on Animate symbol too
+
+        return scrollContainer;
+    }
+
+    // --- Populate Methods ---
+
+    /**
+     * Populates the visual episode symbols based on a provided array of Episode objects.
+     * Clears existing symbols and re-renders the list.
+     * @param {Episode[]} episodesToRender - The list of Episode objects to render.
+     */
+    populateEpisodeSymbols(episodesToRender) {
+        const sc = this.episodeList;
+        sc.removeAllChildren();
+        sc.symbols = [];
+        sc.selectedIndex = 0;
+
+        let yOffset = 0;
+        episodesToRender.forEach((episode) => {
+            const episodeSymbol = new this.episodeSymbol();
+            episodeSymbol.episode = episode;
+            episodeSymbol.gotoAndStop("list-unselected"); // Default state
+            episodeSymbol.x = 0; // Ensure X is 0 relative to scrollContainer
+            episodeSymbol.y = yOffset;
+            episodeSymbol.originalY = yOffset; // Store original Y for detail padding
+            yOffset += this.listItemHeight; // Increment offset by consistent item height
+
+            sc.symbols.push(episodeSymbol);
+            sc.addChild(episodeSymbol);
+
+            // Adjust title position for single-line titles if needed
+            episodeSymbol.titleCentered.text = episode.title;
+            const titleBounds = episodeSymbol.titleCentered.getBounds();
+            if (titleBounds && titleBounds.height <= 45) { // Assuming 45 is max single line height
+                episodeSymbol.titleCentered.y += titleBounds.height / 2;
+            } else if (!titleBounds) {
+                PodCube.warn("SC_TRANSMISSIONS: titleCentered.getBounds() returned null for episode:", episode.title);
+            }
+        });
+        sc.totalContentHeight = episodesToRender.length * this.listItemHeight;
+    }
+
+    /**
+     * Populates the filter options list (e.g., "Tags", "Models", "Years", "Sort By").
+     * This list determines which filter category the user wants to adjust.
+     */
+    populateFilterOptions() {
+        const sc = this.filterOptionsList;
+        sc.removeAllChildren();
+        sc.symbols = [];
+        sc.selectedIndex = 0; // Will be updated below based on activeFilterCategory
+
+        let yOffset = 0;
+        // Filter out 'searchQuery' as it's no longer supported by navigation buttons
+        const optionsKeys = Object.keys(this._filterOptionMapping).filter(key => key !== 'searchQuery');
+
+        optionsKeys.forEach((key, index) => {
+            const config = this._filterOptionMapping[key];
+            const optionSymbol = new this.filterOptionsListItem();
+            optionSymbol.label.text = config.label;
+            optionSymbol.filterKey = key; // Store the criteria key on the symbol for easy access
+
+            optionSymbol.gotoAndStop("list-unselected");
+            optionSymbol.x = 0;
+            optionSymbol.y = yOffset;
+            yOffset += optionSymbol.nominalBounds.height * 1.05; // Use symbol's actual height
+
+            sc.symbols.push(optionSymbol);
+            sc.addChild(optionSymbol);
+
+            // Set initial selected index based on activeFilterCategory
+            if (key === this.currentCriteria.activeFilterCategory) {
+                sc.selectedIndex = index;
+            }
+        });
+
+        sc.totalContentHeight = optionsKeys.length * (this.filterOptionsListItem.prototype.nominalBounds.height * 1.05);
+
+        // Reset scroll position and highlight the selected option
+        sc.y = 0;
+        if (sc.symbols[sc.selectedIndex]) {
+            sc.symbols[sc.selectedIndex].gotoAndStop("list-selected");
+        }
+        this.scrollSelectionToCenter(sc); // Ensure selected option is visible
+        stage.update();
+    }
+
+    /**
+     * Populates the filter group list based on the currently selected filter category.
+     * @param {string} filterCategoryKey - The key from _filterOptionMapping (e.g., 'tag', 'year', 'sortBy').
+     */
+    populateFilterGroups(filterCategoryKey) {
+        const sc = this.filterGroupsList;
+        sc.removeAllChildren();
+        sc.symbols = [];
+        sc.selectedIndex = 0; // Reset index for new group
+
+        const config = this._filterOptionMapping[filterCategoryKey];
+        let valuesToDisplay = [];
+
+        if (config.getter && PodCube.Feed[config.getter]) {
+            // Get values from PodCube.Feed for categories like tags, years, etc.
+            valuesToDisplay = PodCube.Feed[config.getter]();
+            // Add "All X" option for categories that can be nullified
+            valuesToDisplay.unshift(`All ${config.label}`); // Add "All X" for non-sortBy filters
+        } else if (config.customValues) {
+            // Use custom values for 'sortBy'
+            valuesToDisplay = config.customValues.map(val => {
+                return this._sortByLabels[val] || val; // Use display label if available
+            });
+        } else {
+            PodCube.warn(`SC_TRANSMISSIONS: No getter or custom values defined for filter category: ${filterCategoryKey}`);
+            return;
+        }
+
+        let yOffset = 0;
+        valuesToDisplay.forEach((value, index) => {
+            const groupSymbol = new this.filterGroupsListItem();
+            groupSymbol.label.text = String(value);
+            groupSymbol.filterValue = value; // Store the actual value for applying
+
+            groupSymbol.gotoAndStop("list-unselected");
+            groupSymbol.x = 0;
+            groupSymbol.y = yOffset;
+            yOffset += groupSymbol.nominalBounds.height * 1.05;
+
+            sc.symbols.push(groupSymbol);
+            sc.addChild(groupSymbol);
+
+            // Set selected index for this group if its value matches currentCriteria
+            let currentSelectedValue;
+            if (filterCategoryKey === 'sortBy') {
+                currentSelectedValue = this._sortByLabels[this.currentCriteria.sortBy] || this.currentCriteria.sortBy;
+            } else {
+                 currentSelectedValue = this.currentCriteria[filterCategoryKey];
+            }
+
+            if (value === currentSelectedValue) {
+                sc.selectedIndex = index;
+            } else if (value === `All ${config.label}` && currentSelectedValue === null) {
+                sc.selectedIndex = index; // Select "All X" if no specific filter is active
+            }
+        });
+
+        sc.totalContentHeight = valuesToDisplay.length * (this.filterGroupsListItem.prototype.nominalBounds.height * 1.05);
+
+        // Reset scroll position and highlight the selected option
+        sc.y = 0;
+        if (sc.symbols[sc.selectedIndex]) {
+            sc.symbols[sc.selectedIndex].gotoAndStop("list-selected");
+        }
+        this.scrollSelectionToCenter(sc); // Ensure selected group value is visible
+        stage.update();
     }
 
 
-
     // --- 4. Event Handlers ---
-    // Methods triggered by external events, like data changes from PodCube.Feed.
-
     /**
-     * Handler for when PodCube.Feed's filtered episode list changes.
+     * Handler for when PodCube.Feed's episode list changes or criteria are updated.
      * This method is responsible for updating the UI.
-     * @param {Episode[]} filteredList - The new list of episodes to display.
      */
-    onFeedEpisodesChanged(filteredList) {
-        this.populateEpisodeSymbols(filteredList); // Re-render visual list
-        this.updateSelection(0); // Reset selection to the first item
+    refreshEpisodeList() {
+        PodCube.log("SC_TRANSMISSIONS: Refreshing episode list with criteria:", this.currentCriteria);
+        const episodesToDisplay = PodCube.Feed.getFilteredAndSortedList(this.currentCriteria);
+        this.populateEpisodeSymbols(episodesToDisplay); // Re-render visual list
+        this.updateSelection(0, this.episodeList); // Reset selection to the first item
         stage.update(); // Refresh the display
 
         // Recalculate padding needed for the details view
         this.detailsPadding = (this.selectedItem && this.selectedItem.getBounds()) ?
-                              (this.selectedItem.getBounds().height) * 4 + 140 : 0;
+            (this.selectedItem.getBounds().height) * 4 + 140 : 0;
 
-        PodCube.MSG.publish("Transmissions-Ready", this.episodeSymbols);
-        PodCube.MSG.log("SC_TRANSMISSIONS: Transmissions list ready and populated.");
+        PodCube.MSG.log(`SC_TRANSMISSIONS: Transmissions list ready (${episodesToDisplay.length} episodes).`);
     }
 
     // --- 5. Context Management and User Interactions ---
-    // Methods related to defining and switching interaction contexts.
-
     registerContexts() {
         // Context for navigating the episode list
         this.defineContext("Transmissions:List", {
@@ -132,24 +302,24 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
             down: { hint: "Down", handler: () => this.navigate(1) },
             right: { hint: "Details", handler: () => this.showDetails() },
             yes: { hint: "Add to Queue", handler: () => this._addSelectedEpisodeToQueue() },
-            no: { hint: "Filter/Sort", handler: () => this.showFilterOptions() },
-            left: { hint: "Back", handler: () => PodCube.log("Back pressed. Figure that code out soon.") }
+            no: { hint: "Filter/Sort", handler: () => this.showFilters() },
+            left: { hint: "Back", handler: () => this.showFilters() }
         });
 
         // Context for viewing episode details
         this.defineContext("Transmissions:Details", {
             up: {
                 hint: "Previous", handler: () => {
-                    this.showList(); // Temporarily go back to list to trigger selection update logic
-                    this.navigate(-1); // Update selection to the next episode
-                    this.showDetails(); // Re-enter details view for the new selection
+                    this.showList();
+                    this.navigate(-1);
+                    this.showDetails();
                 }
             },
             down: {
                 hint: "Next", handler: () => {
-                    this.showList(); // Temporarily go back to list to trigger selection update logic
-                    this.navigate(1); // Update selection to the next episode
-                    this.showDetails(); // Re-enter details view for the new selection
+                    this.showList();
+                    this.navigate(1);
+                    this.showDetails();
                 }
             },
             left: { hint: "Back", handler: () => this.showList() },
@@ -157,44 +327,94 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
             no: { hint: "Play Next", handler: () => PodCube.Player.addNextToQueue(this.selectedEpisode) },
         });
 
-        // Context for filter and sort options UI
-        this.defineContext("Transmissions:FilterOptions", {
-            up: { hint: "Up", handler: () => this._navigateFilterUI(-1) },
-            down: { hint: "Down", handler: () => this._navigateFilterUI(1) },
-            right: { hint: "Select Category / Options", handler: () => this._enterFilterCategory() },
-            left: { hint: "Back to Categories / Cancel", handler: () => this._exitFilterOptions() },
-            yes: { hint: "Apply Filter", handler: () => this._applySelectedFilter() },
-            no: { hint: "Clear Filter / Cancel", handler: () => this._cancelFiltersAndReturnToList() }
+        // Context for navigating Filter Categories (Tags, Models, Years, Sort By)
+        this.defineContext("Transmissions:Filters", {
+            up: {
+                hint: "Upward",
+                handler: () => { this.navigate(-1, this.filterOptionsList); },
+            },
+            down: {
+                hint: "Down",
+                handler: () => { this.navigate(1, this.filterOptionsList); },
+            },
+            left: {
+                hint: "Back",
+                handler: () => { this.showList(); }, // Go back to episode list
+            },
+            right: {
+                hint: "Enter Category",
+                handler: () => { this.enterFilterCategory(); },
+            },
+            yes: {
+                hint: "Happy!", // 'Yes' doesn't do much directly on categories, 'Right' enters
+                handler: () => { PodCube.MSG.log("Press RIGHT to enter filter category. NO toggles sort order."); },
+            },
+            no: {
+                hint: "Sort By...",
+                handler: () => { this.showSortByOptions(); }, // Toggle sort order for "Sort By"
+            },
+        });
+
+        // Context for navigating Filter Group Values (e.g., specific years, tags, sortBy values)
+        this.defineContext("Transmissions:FilterGroups", {
+            up: {
+                hint: "Upward",
+                handler: () => { this.navigate(-1, this.filterGroupsList); },
+            },
+            down: {
+                hint: "Down",
+                handler: () => { this.navigate(1, this.filterGroupsList); },
+            },
+            left: {
+                hint: "Back",
+                handler: () => { this.exitFilterCategory(); }, // Go back to filter categories
+            },
+            right: {
+                hint: "Apply Filter",
+                handler: () => { this.applyFilterGroupSelection(); },
+            },
+            yes: {
+                hint: "Apply Filter",
+                handler: () => { this.applyFilterGroupSelection(); },
+            },
+            no: {
+                hint: "Sort By...", // Or just 'Back'
+                handler: () => { this.showSortByOptions(); },
+            },
         });
     }
 
     // --- 6. UI State Management (Show/Hide/Transition) ---
-    // Methods that control which UI elements are visible and how.
-
     showDetails() {
         this.switchContext("Transmissions:Details");
         this._adjustPaddingForDetails();
         this.selectedItem.gotoAndStop("details"); // Show details state of the symbol
-        this.scrollToTop(this.selectedItem);      // Scroll selected item to top of view
-        // Bring selected item to front so details are not obscured
-        this.prevIndex = this.scrollContainer.getChildIndex(this.selectedItem);
-        this.scrollContainer.setChildIndex(this.selectedItem, this.scrollContainer.numChildren - 1);
+        this.scrollToTop(this.selectedItem);       // Scroll selected item to top of view
+        this.prevIndex = this.episodeList.getChildIndex(this.selectedItem);
+        this.episodeList.setChildIndex(this.selectedItem, this.episodeList.numChildren - 1);
         stage.update();
     }
 
     showList() {
+        this.symbol.playToLabel("transmissions"); // Transition to list view
         this.switchContext("Transmissions:List");
         this._adjustPaddingForDetails(); // Reset padding
-        // Restore selected item's original Z-order
         if (this.prevIndex !== undefined) {
-            this.scrollContainer.setChildIndex(this.selectedItem, this.prevIndex);
+            this.episodeList.setChildIndex(this.selectedItem, this.prevIndex);
             this.prevIndex = undefined;
         }
-        this.selectedItem.gotoAndStop("list-selected"); // Show list state of the symbol
-        this.scrollSelectionToCenter(); // Center the selection
-        // Ensure filter UI is hidden
-        this.filterUIContainer.visible = false;
+        if(this.selectedItem) { // Check if there's a selected item
+             this.selectedItem.gotoAndStop("list-selected"); // Show list state of the symbol
+        }
+        this.scrollSelectionToCenter(this.episodeList); // Center the selection
+        this.listView.visible = true; // Ensure list view is visible
         stage.update();
+    }
+
+    showFilters() {
+        this.symbol.playToLabel("filters"); // Transition to filter view
+        this.switchContext("Transmissions:Filters");
+        this.populateFilterOptions(); // Re-populate filter categories
     }
 
     /**
@@ -206,407 +426,214 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
         const isDetailsContext = this.context.name === "Transmissions:Details";
 
         // Only adjust symbols AFTER the selected one
-        const startIndex = this.selectedIndex + 1;
-        for (let i = startIndex; i < this.episodeSymbols.length; i++) {
-            const episodeSymbol = this.episodeSymbols[i];
+        const startIndex = this.episodeList.selectedIndex + 1;
+        for (let i = startIndex; i < this.episodeList.symbols.length; i++) {
+            const episodeSymbol = this.episodeList.symbols[i];
             episodeSymbol.y = isDetailsContext ? episodeSymbol.originalY + padding : episodeSymbol.originalY;
         }
         stage.update();
     }
 
-    // --- 7. List Manipulation (Render, Selection, Scrolling) ---
-    // Methods directly involved in rendering and navigating the episode list.
-
     /**
-     * Populates the visual episode symbols based on a provided array of Episode objects.
-     * Clears existing symbols and re-renders the list.
-     * @param {Episode[]} episodesToRender - The list of Episode objects to render.
-     */
-    populateEpisodeSymbols(episodesToRender) {
-        this.scrollContainer.removeAllChildren();
-        this.episodeSymbols = []; // Clear previous symbols
-
-        let yOffset = 0;
-        episodesToRender.forEach((episode) => {
-            const episodeSymbol = new PodCube.lib._EPISODE();
-            PodCube.Behavior.EpisodeSymbol(episodeSymbol, episode); // Apply behaviors (e.g., data binding)
-            episodeSymbol.gotoAndStop("list-unselected"); // Default state
-            episodeSymbol.x = 0; // Ensure X is 0 relative to scrollContainer
-            episodeSymbol.y = yOffset;
-            episodeSymbol.originalY = yOffset; // Store original Y for detail padding
-            yOffset += this.listItemHeight; // Increment offset by consistent item height
-
-            this.episodeSymbols.push(episodeSymbol);
-            this.scrollContainer.addChild(episodeSymbol);
-
-            // Adjust title position for single-line titles if needed
-            episodeSymbol.titleCentered.text = episode.title;
-            const titleBounds = episodeSymbol.titleCentered.getBounds();
-            if (titleBounds && titleBounds.height <= 45) { // Assuming 45 is max single line height
-                episodeSymbol.titleCentered.y += titleBounds.height / 2;
-            } else if (!titleBounds) {
-                PodCube.warn("SC_TRANSMISSIONS: titleCentered.getBounds() returned null for episode:", episode.title);
-            }
-        });
-
-        // Store the total height of all rendered content for scrolling calculations
-        this.totalContentHeight = episodesToRender.length * this.listItemHeight;
-    }
-
-
-    /**
-     * Navigates to the next or previous episode in the list.
+     * Navigates to the next or previous item in the specified list.
      * @param {number} direction - The direction of navigation (1 for forward, -1 for backward).
+     * @param {createjs.Container} sc - The scroll container (defaults to episodeList).
      */
-    navigate(direction) {
-        this.updateSelection(this.selectedIndex + direction)
+    navigate(direction, sc = this.episodeList) {
+        this.updateSelection(sc.selectedIndex + direction, sc);
     }
 
     /**
-     * Updates the currently selected episode item in the list.
+     * Updates the currently selected item in a list.
      * Handles visual state changes and triggers scrolling.
      * @param {number} newIndex - The index to select.
+     * @param {createjs.Container} sc - The scroll container.
      */
-    updateSelection(newIndex) {
-        const numEpisodes = this.episodeSymbols.length;
-
-        // Handle empty list scenario
-        if (numEpisodes === 0) {
-            if (this.episodeSymbols[this.selectedIndex]) {
-                this.episodeSymbols[this.selectedIndex].gotoAndStop("list-unselected");
+    updateSelection(newIndex, sc) {
+        const numItems = sc.symbols.length;
+        if (numItems === 0) {
+            if (sc.selectedIndex !== -1 && sc.symbols[sc.selectedIndex]) {
+                sc.symbols[sc.selectedIndex].gotoAndStop("list-unselected");
             }
-            this.selectedIndex = -1; // No selection
+            sc.selectedIndex = -1;
             return;
         }
-
-        // Deselect previous item if one was selected
-        if (this.selectedIndex !== -1 && this.episodeSymbols[this.selectedIndex]) {
-            this.episodeSymbols[this.selectedIndex].gotoAndStop("list-unselected");
+        if (sc.selectedIndex !== -1 && sc.symbols[sc.selectedIndex]) {
+            sc.symbols[sc.selectedIndex].gotoAndStop("list-unselected");
         }
-
-        // Calculate new index, handling wrapping (modulo) and negative results
-        this.selectedIndex = (newIndex % numEpisodes + numEpisodes) % numEpisodes;
-
-        // Select the new item and update its visual state
-        if (this.episodeSymbols[this.selectedIndex]) {
-            this.episodeSymbols[this.selectedIndex].gotoAndStop("list-selected");
+        sc.selectedIndex = (newIndex % numItems + numItems) % numItems;
+        if (sc.symbols[sc.selectedIndex]) {
+            sc.symbols[sc.selectedIndex].gotoAndStop("list-selected");
         }
-
-        this.scrollSelectionToCenter(); // Adjust scroll position
-        stage.update(); // Ensure changes are visible
+        this.scrollSelectionToCenter(sc);
+        stage.update();
     }
 
     /**
      * Scrolls the list container to bring the selected item into view,
      * aiming to place it near the top (30% down).
+     * @param {createjs.Container} sc - The scroll container.
      */
-    scrollSelectionToCenter() {
-        const selectedSymbol = this.selectedItem;
+    scrollSelectionToCenter(sc) {
+        const selectedSymbol = sc.symbols[sc.selectedIndex];
         if (!selectedSymbol) {
-            // If no selected item (e.g., empty list), reset scroll to top
-            createjs.Tween.get(this.scrollContainer).to({ y: 0 }, 300, createjs.Ease.quadOut);
+            createjs.Tween.get(sc).to({ y: 0 }, 300, createjs.Ease.quadOut);
             return;
         }
 
-        const listViewHeight = this.listView.nominalBounds.height;
-        const contentHeight = this.totalContentHeight; // Total height of all items
+        const listViewHeight = sc.parentSymbol.nominalBounds.height;
+        const contentHeight = sc.totalContentHeight; // Total height of all items
 
-        // Calculate desired Y position for the scroll container
-        // We want the selected symbol's Y to be at `listViewHeight * 0.3` within the view.
-        let targetScrollContainerY = -(selectedSymbol.y - (listViewHeight * 0.3));
+        let targetY = -(selectedSymbol.y - (listViewHeight * 0.3));
 
-        // Clamp the scroll position:
-        const maxScrollY = 0; // Cannot scroll up past the top of the content
-        let minScrollY = -(contentHeight - listViewHeight); // Max scroll down
-        if (minScrollY > 0) { // If content is shorter than the view, prevent scrolling at all
+        const maxScrollY = 0;
+        let minScrollY = -(contentHeight - listViewHeight);
+        if (minScrollY > 0) {
             minScrollY = 0;
         }
 
-        // Apply clamping to ensure target Y is within valid scroll bounds
-        targetScrollContainerY = Math.max(Math.min(targetScrollContainerY, maxScrollY), minScrollY);
+        targetY = Math.max(Math.min(targetY, maxScrollY), minScrollY);
 
-        // Apply the smooth scroll animation
-        createjs.Tween.get(this.scrollContainer)
-            .to({ y: targetScrollContainerY }, 300, createjs.Ease.quadOut);
+        createjs.Tween.get(sc).to({ y: targetY }, 300, createjs.Ease.quadOut);
     }
 
     /**
      * Scrolls the list container to bring a specific symbol (or the first one by default) to the very top.
      * Used for "Scroll to Top" or when entering details view.
-     * @param {createjs.DisplayObject} [symbolToScrollTo=this.episodeSymbols[0]] - The symbol to scroll to.
+     * @param {createjs.DisplayObject} symbolToScrollTo - The symbol to scroll to.
+     * @param {createjs.Container} sc - The scroll container.
      */
-    scrollToTop(symbolToScrollTo = this.episodeSymbols[0]) {
+    scrollToTop(symbolToScrollTo, sc = this.episodeList) {
         if (!symbolToScrollTo) return;
-        const targetY = symbolToScrollTo.y; // Y position of the symbol within the scrollContainer
-        createjs.Tween.get(this.scrollContainer)
-            .to({ y: -targetY }, 300, createjs.Ease.quadOut); // Animate scrollContainer's Y
+        const targetY = symbolToScrollTo.y;
+        createjs.Tween.get(sc).to({ y: -targetY }, 300, createjs.Ease.quadOut);
     }
 
-    // --- 8. Getters (Computed Properties) ---
-    // Convenient accessors for current state.
+    // --- NEW: Filter Specific Methods ---
 
+    /**
+     * Called when 'right' is pressed in the Transmissions:Filters context.
+     * Transitions to the filter groups list for the selected category.
+     */
+    enterFilterCategory() {
+        const selectedOptionSymbol = this.filterOptionsList.symbols[this.filterOptionsList.selectedIndex];
+        if (!selectedOptionSymbol) return;
+
+        
+        this.currentCriteria.activeFilterCategory = selectedOptionSymbol.filterKey;
+        PodCube.log(`SC_TRANSMISSIONS: Entering filter category: ${this.currentCriteria.activeFilterCategory}`);
+
+        // Populate and switch to filter group context
+        this.populateFilterGroups(this.currentCriteria.activeFilterCategory);
+        this.switchContext("Transmissions:FilterGroups");
+        this.filterGroupsIndicator.visible = true;
+        this.filterOptionsIndicator.visible = false;
+    }
+
+    /**
+     * Called when 'left' is pressed in the Transmissions:FilterGroups context.
+     * Transitions back to the filter options list.
+     */
+    exitFilterCategory() {
+        PodCube.log("SC_TRANSMISSIONS: Exiting filter category.");
+        this.symbol.playToLabel("filters"); // Transition back to filter categories view
+        this.switchContext("Transmissions:Filters");
+        this.filterGroupsList.symbols[this.filterGroupsList.selectedIndex].gotoAndStop("list-unselected");
+        this.populateFilterOptions(); // Re-highlight the selected option and indicators
+        this.filterGroupsIndicator.visible = false;
+        this.filterOptionsIndicator.visible = true;
+    }
+ /**
+     * Called when 'no' is pressed in the Transmissions:Filters context.
+     * Directly shows the "Sort By" options *and* handles sort order toggling.
+     */
+    showSortByOptions() {
+        PodCube.log("SC_TRANSMISSIONS: Showing Sort By options.");
+        this.currentCriteria.activeFilterCategory = 'sortBy';
+
+        // Toggle sort order
+        this.currentCriteria.sortAscending = !this.currentCriteria.sortAscending;
+        PodCube.log(`SC_TRANSMISSIONS: Sort order flipped to Ascending: ${this.currentCriteria.sortAscending}`);
+        this.refreshEpisodeList(); // Refresh list with new sort order
+        // Update the display for the sort order text if you have one
+        if (this.symbol.frame.sortOrder) { // Check if the sortOrder text field exists
+            this.symbol.frame.sortOrder.text = this.currentCriteria.sortAscending ? 'Ascending' : 'Descending';
+        }
+
+        // Ensure "Sort By" option is selected in filterOptionsList for visual consistency
+        const sortByOptionIndex = Object.keys(this._filterOptionMapping).filter(key => key !== 'searchQuery').indexOf('sortBy');
+        if (sortByOptionIndex !== -1) {
+            this.updateSelection(sortByOptionIndex, this.filterOptionsList);
+        }
+
+        this.populateFilterGroups(this.currentCriteria.activeFilterCategory);
+        this.switchContext("Transmissions:FilterGroups");
+        this.filterGroupsIndicator.visible = true;
+        this.filterOptionsIndicator.visible = false;
+    }
+
+    applyFilterGroupSelection() {
+        const selectedGroupSymbol = this.filterGroupsList.symbols[this.filterGroupsList.selectedIndex];
+        if (!selectedGroupSymbol) return;
+
+        const categoryKey = this.currentCriteria.activeFilterCategory;
+        let selectedValue = selectedGroupSymbol.filterValue;
+        const config = this._filterOptionMapping[categoryKey];
+
+        // Only clear existing *category* filters (not sortBy)
+        if (categoryKey !== 'sortBy') {
+            Object.keys(this._filterOptionMapping).forEach(key => {
+                if (key !== 'sortBy' && this.currentCriteria[key] !== undefined) {
+                    this.currentCriteria[key] = null; // Clear existing category filters
+                }
+            });
+        }
+
+        // Apply the new filter value or set to null if "All X" is selected
+        if (categoryKey === 'sortBy') {
+            // Convert display label back to internal value for sortBy
+            const internalSortByValue = Object.keys(this._sortByLabels).find(key => this._sortByLabels[key] === selectedValue);
+            this.currentCriteria.sortBy = internalSortByValue || selectedValue;
+        } else if (selectedValue.startsWith('All ')) {
+             this.currentCriteria[categoryKey] = null; // Set filter to null to show all
+        } else {
+             this.currentCriteria[categoryKey] = selectedValue;
+        }
+
+        PodCube.log(`SC_TRANSMISSIONS: Applied filter: ${categoryKey} = ${this.currentCriteria[categoryKey]}`);
+        this.refreshEpisodeList(); // Refresh main episode list
+        this.showList(); // Go back to episode list view
+    }
+
+
+    /**
+     * Called when 'no' is pressed in the Transmissions:Filters context.
+     * Toggles the sort order (ascending/descending).
+     */
+    flipSortOrder() {
+        // Only allow flipping sort order if "Sort By" is the active filter category
+        const selectedOptionSymbol = this.filterOptionsList.symbols[this.filterOptionsList.selectedIndex];
+        if (selectedOptionSymbol && selectedOptionSymbol.filterKey === 'sortBy') {
+            this.currentCriteria.sortAscending = !this.currentCriteria.sortAscending;
+            PodCube.log(`SC_TRANSMISSIONS: Sort order flipped to Ascending: ${this.currentCriteria.sortAscending}`);
+            this.refreshEpisodeList(); // Refresh list with new sort order
+            this.symbol.frame.sortOrder.text = this.currentCriteria.sortAscending ? 'Ascending' : 'Descending'
+        } else {
+            PodCube.MSG.log("Sort order only applies to 'Sort By' category.");
+        }
+    }
+
+
+    // --- 7. Getters (Computed Properties) ---
     get selectedEpisode() {
-        // Returns the Episode data object for the currently selected item
-        return this.selectedItem.episode || null;
+        return this.episodeList.symbols[this.episodeList.selectedIndex]?.episode || null;
     }
 
     get selectedItem() {
-        // Returns the visual display object (_EPISODE symbol) for the selected item
-        return this.episodeSymbols[this.selectedIndex] || null;
+        return this.episodeList.symbols[this.episodeList.selectedIndex] || null;
     }
 
-    // --- 9. Utility Methods (Misc. actions) ---
-
-    popOutDataDisk(episode) {
-        const dataDiskSymbol = new PodCube.lib._DISK_FLYOUT();
-        dataDiskSymbol.episode = episode; // Attach episode data
-        exportRoot.addChild(dataDiskSymbol); // Add to main stage
-        dataDiskSymbol.gotoAndPlay("disk-up"); // Play animation
-        dataDiskSymbol.x = stage.canvas.width / 2; // Center horizontally
-        dataDiskSymbol.y = stage.canvas.height / 2; // Center vertically
-    }
-
-    // --- 10. Filter/Sort UI Logic ---
-    // Methods related to showing and applying filters/sorts.
-
-    /**
-     * Displays the filter and sort options UI.
-     * Initializes the category list and switches context.
-     */
-    showFilterOptions() {
-        PodCube.log("SC_TRANSMISSIONS: Displaying filter and sort options UI.");
-        this.switchContext("Transmissions:FilterOptions");
-
-        // Hide the main episode list
-        this.listView.visible = false;
-        // Show the filter UI container
-        this.filterUIContainer.visible = true;
-
-        // Reset filter UI state
-        this.filterUIMode = 'categories';
-        this.currentFilterCategoryIndex = 0;
-        this.currentFilterOptionIndex = 0;
-
-        // Populate and display filter categories
-        this._populateFilterSymbols(this.availableFilterCategories, this.filterCategoriesSymbols);
-        this._updateFilterUISelection(0, 'categories'); // Select the first category
-
-        this.filterContextText.text = "SELECT CATEGORY:"; // Update context text
-        stage.update();
-    }
-
-    /**
-     * Navigates the filter UI (either categories or options).
-     * @param {number} direction - 1 for down, -1 for up.
-     * @private
-     */
-    _navigateFilterUI(direction) {
-        if (this.filterUIMode === 'categories') {
-            this._updateFilterUISelection(this.currentFilterCategoryIndex + direction, 'categories');
-        } else { // filterUIMode === 'options'
-            this._updateFilterUISelection(this.currentFilterOptionIndex + direction, 'options');
-        }
-    }
-
-    /**
-     * Updates the selection within the filter UI and refreshes visuals.
-     * @param {number} newIndex - The index to select.
-     * @param {'categories'|'options'} mode - Which list to update.
-     * @private
-     */
-    _updateFilterUISelection(newIndex, mode) {
-        let symbolsArray = (mode === 'categories') ? this.filterCategoriesSymbols : this.filterOptionsSymbols;
-        let currentIndexRef = (mode === 'categories') ? 'currentFilterCategoryIndex' : 'currentFilterOptionIndex';
-
-        const numItems = symbolsArray.length;
-
-        // Handle empty list scenario
-        if (numItems === 0) {
-            if (symbolsArray[this[currentIndexRef]]) {
-                symbolsArray[this[currentIndexRef]].gotoAndStop("list-unselected");
-            }
-            this[currentIndexRef] = -1;
-            return;
-        }
-
-        // Deselect previous item
-        if (this[currentIndexRef] !== -1 && symbolsArray[this[currentIndexRef]]) {
-            symbolsArray[this[currentIndexRef]].gotoAndStop("list-unselected");
-        }
-
-        // Calculate new index, handling wrapping
-        this[currentIndexRef] = (newIndex % numItems + numItems) % numItems;
-
-        // Select new item
-        if (symbolsArray[this[currentIndexRef]]) {
-            symbolsArray[this[currentIndexRef]].gotoAndStop("list-selected");
-        }
-        stage.update();
-    }
-
-    /**
-     * Populates the filter UI container with a list of items using episode symbols.
-     * @param {string[]} itemsToRender - Array of strings (e.g., category names or filter options).
-     * @param {createjs.MovieClip[]} targetSymbolsArray - The array to store the generated symbols.
-     * @private
-     */
-    _populateFilterSymbols(itemsToRender, targetSymbolsArray) {
-        this.filterUIContainer.removeAllChildren();
-        targetSymbolsArray.length = 0; // Clear the array
-
-        let yOffset = 0;
-        itemsToRender.forEach((itemText) => {
-            const symbol = new PodCube.lib._EPISODE(); // Reusing episode symbol
-            symbol.gotoAndStop("list-unselected");
-            symbol.x = 0; // Adjust as needed for your filter UI layout
-            symbol.y = yOffset;
-            symbol.label.text = itemText; // Set a text field on the symbol if available (adjust as per your _EPISODE symbol)
-            // If your _EPISODE symbol has titleCentered, use that:
-            if (symbol.titleCentered) {
-                symbol.titleCentered.text = itemText;
-                 // Adjust title position for single-line titles if needed
-                const titleBounds = symbol.titleCentered.getBounds();
-                if (titleBounds && titleBounds.height <= 45) {
-                    symbol.titleCentered.y += titleBounds.height / 2;
-                }
-            } else {
-                PodCube.warn("SC_TRANSMISSIONS: _EPISODE symbol does not have 'label' or 'titleCentered' for filter UI.");
-            }
-            yOffset += this.listItemHeight;
-
-            targetSymbolsArray.push(symbol);
-            this.filterUIContainer.addChild(symbol);
-        });
-        stage.update();
-    }
-
-    /**
-     * Enters a filter category, populating its options, or applies a selected option.
-     * Triggered by 'right' button.
-     * @private
-     */
-    _enterFilterCategory() {
-        if (this.filterUIMode === 'categories') {
-            const selectedCategoryName = this.availableFilterCategories[this.currentFilterCategoryIndex];
-            const categoryData = this.filterCategoryMap[selectedCategoryName];
-
-            if (categoryData && PodCube.Feed[categoryData.method]) {
-                const availableOptions = PodCube.Feed[categoryData.method]();
-                this._populateFilterSymbols(availableOptions, this.filterOptionsSymbols);
-                this.filterUIMode = 'options';
-                this.currentFilterOptionIndex = 0;
-                this._updateFilterUISelection(0, 'options'); // Select first option
-                this.filterContextText.text = `SELECT ${selectedCategoryName.toUpperCase()}:`;
-            } else {
-                PodCube.warn(`SC_TRANSMISSIONS: No method found for category: ${selectedCategoryName}`);
-            }
-        } else { // filterUIMode === 'options'
-            // User pressed 'right' while in options mode, meaning they want to apply the selected option.
-            this._applySelectedFilter();
-        }
-        stage.update();
-    }
-
-    /**
-     * Exits filter options (back to categories) or cancels filters (back to list).
-     * Triggered by 'left' button.
-     * @private
-     */
-    _exitFilterOptions() {
-        if (this.filterUIMode === 'options') {
-            // Go back to categories view
-            this._populateFilterSymbols(this.availableFilterCategories, this.filterCategoriesSymbols);
-            this.filterUIMode = 'categories';
-            this._updateFilterUISelection(this.currentFilterCategoryIndex, 'categories'); // Restore selection
-            this.filterContextText.text = "SELECT CATEGORY:";
-        } else { // filterUIMode === 'categories'
-            // Cancel and return to main list
-            this._cancelFiltersAndReturnToList();
-        }
-        stage.update();
-    }
-
-    /**
-     * Applies the currently selected filter (either category or specific option).
-     * Triggered by 'yes' button.
-     * @private
-     */
-    _applySelectedFilter() {
-        if (this.filterUIMode === 'options') {
-            const selectedCategoryName = this.availableFilterCategories[this.currentFilterCategoryIndex];
-            const categoryData = this.filterCategoryMap[selectedCategoryName];
-            const selectedOptionValue = this.filterOptionsSymbols[this.currentFilterOptionIndex]?.titleCentered?.text ||
-                                        this.filterOptionsSymbols[this.currentFilterOptionIndex]?.label?.text;
-
-
-            if (selectedOptionValue && categoryData) {
-                // Clear previous filter for this category type
-                delete this.currentFilters[categoryData.type];
-                // Apply the new filter
-                this.currentFilters[categoryData.type] = selectedOptionValue;
-                this.filterContextText.text = `FILTER: ${selectedOptionValue}`;
-                PodCube.log(`SC_TRANSMISSIONS: Applied filter - ${categoryData.type}: ${selectedOptionValue}`);
-            } else {
-                PodCube.warn("SC_TRANSMISSIONS: No filter option selected or category data missing.");
-            }
-        } else { // filterUIMode === 'categories' (user pressed YES on a category, implies ALL for that category)
-            const selectedCategoryName = this.availableFilterCategories[this.currentFilterCategoryIndex];
-            const categoryData = this.filterCategoryMap[selectedCategoryName];
-
-            // If user selects a category but doesn't drill down, it effectively means "All" for that category.
-            // So, remove any existing filter for that category type.
-            if (categoryData && this.currentFilters[categoryData.type]) {
-                delete this.currentFilters[categoryData.type];
-                this.filterContextText.text = `FILTER: All ${selectedCategoryName}`;
-                PodCube.log(`SC_TRANSMISSIONS: Cleared filter for ${selectedCategoryName}`);
-            } else {
-                this.filterContextText.text = `FILTER: None`;
-                PodCube.log(`SC_TRANSMISSIONS: No filter to apply for ${selectedCategoryName}`);
-            }
-        }
-
-        // Now, re-apply all active filters and sort
-        this._applyFiltersAndReturnToList();
-    }
-
-
-    applyCurrentFilters() {
-        PodCube.log("SC_TRANSMISSIONS: Applying filters and sorting criteria.");
-        // Combine all criteria for the Feed class
-        const combinedCriteria = {
-            ...this.currentFilters,
-            ...this.currentSort
-        };
-
-        if (PodCube.Feed) {
-            // Get the filtered list from PodCube.Feed based on the combined criteria
-            const filteredEpisodes = PodCube.Feed.getFilteredAndSortedList(combinedCriteria);
-            // Manually trigger the update of the UI with the new list
-            this.onFeedEpisodesChanged(filteredEpisodes);
-        } else {
-            console.error("PodCube.Feed is not available to apply filters.");
-        }
-        this.showList(); // Return to list view and ensure filter UI is hidden
-    }
-
-    _applyFiltersAndReturnToList() {
-        this.applyCurrentFilters();
-    }
-
-    _cancelFiltersAndReturnToList() {
-        PodCube.log("SC_TRANSMISSIONS: Filter options cancelled, returning to list.");
-        // Reset current filters to empty if "no" is pressed while in "categories" mode
-        if (this.filterUIMode === 'categories') {
-            this.currentFilters = {};
-            this.filterContextText.text = "FILTER: None";
-            this.applyCurrentFilters(); // Re-apply without any filters
-        }
-        this.showList(); // This also hides the filter UI container
-    }
-
-    // --- 11. Private Helper Methods for Context Handlers ---
-    // Abstracting common logic from context handlers for clarity.
-
+    // --- 8. Private Helper Methods for Context Handlers ---
     _addSelectedEpisodeToQueue() {
         const episode = this.selectedEpisode;
         if (episode) {
@@ -618,7 +645,7 @@ export class SC_TRANSMISSIONS extends PodCubeScreen {
     }
 
     _scrollToTopAndResetSelection() {
-        this.updateSelection(0); // Select the first item
-        this.scrollToTop();      // Scroll to the very top
+        this.updateSelection(0, this.episodeList); // Select the first item
+        this.scrollToTop(this.episodeList.symbols[0], this.episodeList); // Scroll to the very top
     }
 }

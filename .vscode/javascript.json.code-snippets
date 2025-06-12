@@ -47,6 +47,16 @@
       "});"
     ],
     "description": "Insert full defineContext boilerplate with all handlers"
+  },
+	
+
+
+	"Debug Log via PodCube": {
+    "prefix": "log",
+    "body": [
+      "PodCube.log(`{1:Debug Message}`);"
+    ],
+    "description": "log quickly with PodCube Logger Shortcut"
   }
 	
 }

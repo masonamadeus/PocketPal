@@ -1,5 +1,9 @@
 // PodCubeRSS.js - RSS Feed parser module
 
+// NEED TO BRING THIS UP TO PARITY WITH THE JSON VERSION
+// SPECIFICALLY DATE PARSING
+// SPECIFICALLY ALSO GET <ITUNES:DURATION> TAGS (WHICH SHOW DURATION IN 00:00:00 FORMAT) AND CONVERT IT TO SECONDS
+
 export class PodCubeRSS {
     constructor() {
         this.FEED_URL = "https://pinecast.com/feed/pc";
